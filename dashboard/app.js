@@ -1,30 +1,98 @@
 // Justice League Factory — Dashboard
-// Polls a log file or can be driven manually via window.simulate for demos
+// Polls SQLite telemetry via API, or falls back to simulated demo mode
 
-const LOG_POLL_INTERVAL = 2000;
+const POLL_INTERVAL = 2000;
 
 const logContainer = document.getElementById('log-container');
 const statusEl = document.getElementById('status');
 const artifactsList = document.getElementById('artifacts-list');
 
-let lastLogLine = 0;
+let lastSeenId = 0;
 let knownArtifacts = new Set();
+let apiAvailable = false;
 
-// Poll the factory log file for new entries
-async function pollLog() {
+// Agent name mapping (DB names → display names)
+const AGENT_DISPLAY = {
+  'batman': 'Batman',
+  'martian-manhunter': 'Martian Manhunter',
+  'cyborg': 'Cyborg',
+  'wonder-woman': 'Wonder Woman',
+  'flash': 'The Flash',
+  'green-lantern': 'Green Lantern',
+  'lois-lane': 'Lois Lane',
+  'oracle': 'Oracle'
+};
+
+// Artifact mapping per agent
+const AGENT_ARTIFACTS = {
+  'martian-manhunter': ['plan.json', 'architecture.md'],
+  'wonder-woman': ['review.json'],
+  'flash': ['test-results.json'],
+  'green-lantern': ['security-review.json'],
+  'oracle': ['improvements.json']
+};
+
+// Poll the SQLite-backed API for agent run data
+async function pollAPI() {
   try {
-    const res = await fetch('/api/log?after=' + lastLogLine);
+    const res = await fetch('/api/latest');
     if (!res.ok) return;
-    const entries = await res.json();
+    apiAvailable = true;
 
-    for (const entry of entries) {
-      addLogEntry(entry.agent || 'system', entry.message);
-      if (entry.agent) updateAgentStatus(entry.agent, entry.status || 'active');
-      if (entry.artifact) addArtifact(entry.artifact, entry.agent);
-      lastLogLine = entry.line || lastLogLine + 1;
+    const runs = await res.json();
+    if (runs.length === 0) return;
+
+    // Process new entries
+    for (const run of runs) {
+      if (run.id <= lastSeenId) continue;
+      lastSeenId = run.id;
+
+      const agent = run.agent || 'unknown';
+      const duration = run.duration_ms ? `${(run.duration_ms / 1000).toFixed(1)}s` : '';
+      const tokens = run.output_tokens ? `${run.output_tokens.toLocaleString()} tokens` : '';
+
+      // Determine status from verdict or presence
+      let status = 'done';
+      if (run.verdict === 'fail') status = 'error';
+
+      updateAgentStatus(agent, status);
+
+      // Build log message
+      let msg = `Complete`;
+      if (run.verdict) msg += ` — verdict: ${run.verdict.toUpperCase()}`;
+      if (duration) msg += ` (${duration})`;
+      if (tokens) msg += ` [${tokens}]`;
+      addLogEntry(agent, msg);
+
+      // Add known artifacts for this agent
+      if (AGENT_ARTIFACTS[agent]) {
+        for (const artifact of AGENT_ARTIFACTS[agent]) {
+          addArtifact(artifact, agent);
+        }
+      }
+      // Cyborg briefings
+      if (agent === 'cyborg' && run.artifacts_produced) {
+        try {
+          const artifacts = JSON.parse(run.artifacts_produced);
+          for (const a of artifacts) addArtifact(a, 'cyborg');
+        } catch {}
+      }
+    }
+
+    // Update global status
+    const doneCards = document.querySelectorAll('.agent-card.done, .agent-card.error');
+    if (doneCards.length > 0) {
+      const hasErrors = document.querySelectorAll('.agent-card.error').length > 0;
+      if (doneCards.length >= 7) { // All non-Oracle agents done
+        statusEl.className = hasErrors ? 'status failed' : 'status complete';
+        statusEl.textContent = hasErrors ? 'FAILED' : 'COMPLETE';
+      } else {
+        statusEl.className = 'status running';
+        statusEl.textContent = 'RUNNING';
+      }
     }
   } catch {
-    // Server not running — fall back to demo/simulate mode
+    // API not available — simulate mode still works
   }
 }
 
@@ -32,7 +100,8 @@ function addLogEntry(agent, message) {
   const el = document.createElement('div');
   el.className = `log-entry ${agent}`;
   const time = new Date().toLocaleTimeString();
-  el.textContent = `[${time}] [${agent}] ${message}`;
+  const displayName = AGENT_DISPLAY[agent] || agent;
+  el.textContent = `[${time}] [${displayName}] ${message}`;
   logContainer.appendChild(el);
   logContainer.scrollTop = logContainer.scrollHeight;
 }
@@ -64,14 +133,54 @@ function addArtifact(name, agent) {
   const empty = artifactsList.querySelector('.artifact-empty');
   if (empty) empty.remove();
 
+  const displayName = AGENT_DISPLAY[agent] || agent;
   const el = document.createElement('div');
   el.className = 'artifact-item';
-  el.innerHTML = `<div class="artifact-name">${name}</div><div class="artifact-agent">by ${agent}</div>`;
+  el.innerHTML = `<div class="artifact-name">${name}</div><div class="artifact-agent">by ${displayName}</div>`;
   artifactsList.appendChild(el);
 }
 
+// Load historical data on startup
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/agents');
+    if (!res.ok) return;
+    apiAvailable = true;
+
+    const runs = await res.json();
+    if (runs.length === 0) return;
+
+    statusEl.className = 'status complete';
+    statusEl.textContent = 'COMPLETE';
+
+    for (const run of runs) {
+      const agent = run.agent || 'unknown';
+      let status = 'done';
+      if (run.verdict === 'fail') status = 'error';
+      updateAgentStatus(agent, status);
+
+      const duration = run.duration_ms ? `${(run.duration_ms / 1000).toFixed(1)}s` : '';
+      const tokens = run.output_tokens ? `${run.output_tokens.toLocaleString()} tokens` : '';
+      let msg = `Complete`;
+      if (run.verdict) msg += ` — verdict: ${run.verdict.toUpperCase()}`;
+      if (duration) msg += ` (${duration})`;
+      if (tokens) msg += ` [${tokens}]`;
+      addLogEntry(agent, msg);
+
+      if (AGENT_ARTIFACTS[agent]) {
+        for (const artifact of AGENT_ARTIFACTS[agent]) {
+          addArtifact(artifact, agent);
+        }
+      }
+
+      if (run.id > lastSeenId) lastSeenId = run.id;
+    }
+  } catch {
+    // No API — waiting for simulate or live run
+  }
+}
+
 // Demo mode: manually drive the dashboard with simulated events
-// Use from browser console: simulate.activate('batman'), simulate.log('cyborg', 'Implementing task-001...'), etc.
 window.simulate = {
   activate(agent) { updateAgentStatus(agent, 'active'); addLogEntry(agent, 'Starting...'); },
   complete(agent) { updateAgentStatus(agent, 'done'); addLogEntry(agent, 'Complete.'); },
@@ -93,63 +202,60 @@ window.simulate = {
     this.activate('martian-manhunter');
     this.log('martian-manhunter', 'Reading feature request and exploring codebase...');
     await sleep(2000);
-    this.log('martian-manhunter', 'Decomposing into 3 tasks across 2 parallel groups...');
+    this.log('martian-manhunter', 'Decomposing into 5 tasks across 2 parallel groups...');
     await sleep(1500);
     this.artifact('plan.json', 'martian-manhunter');
     this.artifact('architecture.md', 'martian-manhunter');
     this.complete('martian-manhunter');
-    this.log('batman', 'Plan received. Dispatching Cyborg for implementation...');
+    this.log('batman', 'Plan received. Dispatching Cyborg x3 for parallel group 1...');
     await sleep(1000);
 
     this.activate('cyborg');
-    this.log('cyborg', 'Reading plan and architecture. Implementing task-001...');
+    this.log('cyborg', 'Parallel group 1: task-001, task-003, task-005 dispatched simultaneously...');
     await sleep(2500);
-    this.log('cyborg', 'Task-001 complete. Implementing task-002...');
+    this.log('cyborg', 'Group 1 complete. Dispatching group 2: task-002, task-004...');
     await sleep(2000);
     this.artifact('briefings/cyborg-task-001.json', 'cyborg');
+    this.artifact('briefings/cyborg-task-003.json', 'cyborg');
+    this.artifact('briefings/cyborg-task-005.json', 'cyborg');
     this.artifact('briefings/cyborg-task-002.json', 'cyborg');
+    this.artifact('briefings/cyborg-task-004.json', 'cyborg');
     this.complete('cyborg');
-    this.log('batman', 'Implementation complete. Dispatching Wonder Woman for review...');
+    this.log('batman', 'Implementation complete. Dispatching quality gates in parallel...');
     await sleep(1000);
 
     this.activate('wonder-woman');
-    this.log('wonder-woman', 'Evaluating code against plan and architecture...');
-    await sleep(2000);
-    this.log('wonder-woman', 'Found 1 warning, 0 critical issues. Verdict: PASS');
-    this.artifact('review.json', 'wonder-woman');
-    this.complete('wonder-woman');
-    this.log('batman', 'Review passed. Dispatching Flash for testing...');
-    await sleep(1000);
-
     this.activate('flash');
-    this.log('flash', 'Writing tests for 4 acceptance criteria...');
-    await sleep(2000);
-    this.log('flash', 'Running test suite: 8 tests, 8 passed, 0 failed. Verdict: PASS');
-    this.artifact('test-results.json', 'flash');
-    this.complete('flash');
-    this.log('batman', 'Tests passed. Dispatching Green Lantern and Lois Lane...');
-    await sleep(1000);
-
     this.activate('green-lantern');
     this.activate('lois-lane');
-    this.log('green-lantern', 'Scanning for OWASP Top 10 and STRIDE vulnerabilities...');
+    this.log('wonder-woman', 'The Lasso of Truth compels me to examine this code...');
+    this.log('flash', 'Scanning 18 acceptance criteria... writing tests...');
+    this.log('green-lantern', 'Constructing perimeter scan around 6 modified files...');
     this.log('lois-lane', 'Reading code and architecture for documentation...');
     await sleep(2500);
-    this.log('green-lantern', '1 medium finding (input validation). Verdict: PASS');
+    this.log('wonder-woman', '3 issues found (0 critical). Verdict: PASS');
+    this.artifact('review.json', 'wonder-woman');
+    this.complete('wonder-woman');
+    await sleep(500);
+    this.log('flash', '44 tests, 44 passed, 0 failed. Zero coverage gaps. Verdict: PASS');
+    this.artifact('test-results.json', 'flash');
+    this.complete('flash');
+    await sleep(800);
+    this.log('green-lantern', 'No critical or high findings. Threat model clear. Verdict: PASS');
     this.artifact('security-review.json', 'green-lantern');
     this.complete('green-lantern');
-    await sleep(1000);
-    this.log('lois-lane', 'API documentation and README updates written.');
+    await sleep(500);
+    this.log('lois-lane', 'Feature documentation written. API endpoint documented.');
     this.complete('lois-lane');
     await sleep(500);
 
-    this.log('batman', 'All agents complete. Logging eval results...');
-    this.artifact('eval-log.jsonl (appended)', 'batman');
+    this.log('batman', 'All agents complete. Mission successful.');
     this.complete('batman');
     this.done();
     this.log('system', 'Factory run complete. All agents passed.');
   }
 };
 
-// Start polling (no-op if server isn't running)
-setInterval(pollLog, LOG_POLL_INTERVAL);
+// Initialize
+loadHistory();
+setInterval(pollAPI, POLL_INTERVAL);
