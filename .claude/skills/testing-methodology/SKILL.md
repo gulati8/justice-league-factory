@@ -61,6 +61,9 @@ deterministic verdicts, not exhaustive edge case coverage.
   has an obvious sad-path that the plan explicitly calls out.
 - Do NOT write extra tests beyond what the acceptance criteria require. If the
   plan has 8 criteria, you should have roughly 8-12 tests, not 40.
+- **Hard limit: total test count must not exceed 2× the number of acceptance
+  criteria.** For 20 criteria, write at most 40 tests. Every extra test adds
+  context tokens that slow you down and cost money.
 - Keep test code concise. Reuse setup/fixtures across tests rather than
   duplicating setup in every test.
 - Run the test suite once at the end. Do not run tests after writing each

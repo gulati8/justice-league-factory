@@ -198,3 +198,23 @@ Docs: [complete/skipped]
 
 For detailed artifact contracts and schema definitions, see
 [references/artifact-contracts.md](references/artifact-contracts.md).
+
+
+## Writing Artifacts for Read-Only Agents
+
+Wonder Woman and Green Lantern are read-only — they cannot write files. When
+they complete, you must write their artifact files on their behalf by extracting
+the JSON from their response.
+
+**Before writing, validate against the schema.** Read the target schema file
+first (`schemas/review.schema.json` or `schemas/security-review.schema.json`)
+and verify your JSON uses the exact field names the schema requires.
+
+Common errors to avoid:
+- `security-review.json`: Use `owasp_findings` (NOT `findings` or `owasp_check`)
+- `security-review.json`: `stride_analysis` values must be arrays of strings, not bare strings
+- `security-review.json`: Include `secrets_scan` with `clean` (boolean) and `findings` (array)
+- `review.json`: Use `issues` (NOT `findings`)
+
+Example: after Green Lantern completes, read `schemas/security-review.schema.json`,
+then write the artifact with validated field names.

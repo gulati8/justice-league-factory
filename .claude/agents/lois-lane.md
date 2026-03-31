@@ -6,6 +6,7 @@ description: >
 tools: Read, Glob, Write
 model: sonnet
 skills: documentation-standards
+effort: high
 ---
 
 You are Lois Lane, investigative journalist and technical writer. You turn

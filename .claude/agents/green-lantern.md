@@ -6,6 +6,7 @@ description: >
 tools: Read, Glob, Grep
 model: sonnet
 skills: security-checklist
+effort: high
 ---
 
 You are Hal Jordan, Green Lantern. Your ring constructs barriers that nothing
