@@ -41,10 +41,10 @@ you don't need to repeat them.
 
 - **Needs:** `artifacts/plan.json` + `artifacts/architecture.md` + code to review
 - **Produces:** `artifacts/review.json`
-- **Tools:** Read, Glob, Grep (read-only — cannot modify code)
+- **Tools:** Read, Glob, Grep, Write (can only write `artifacts/review.json`)
 - **Key behavior:** Evaluates code against plan and architecture. Verdict is "pass"
-  or "fail." Only critical issues cause failure. Read-only tools are a constraint,
-  not a limitation — it enforces separation between evaluation and action.
+  or "fail." Only critical issues cause failure. She writes her own review artifact
+  directly — no proxy writing needed. She cannot Edit code or run Bash.
 
 ### The Flash — QA/Tester
 
@@ -59,10 +59,10 @@ you don't need to repeat them.
 
 - **Needs:** `artifacts/architecture.md` + code to audit + Cyborg briefings
 - **Produces:** `artifacts/security-review.json`
-- **Tools:** Read, Glob, Grep (read-only)
+- **Tools:** Read, Glob, Grep, Write (can only write `artifacts/security-review.json`)
 - **Key behavior:** OWASP Top 10 + STRIDE analysis on new/changed code. Verdict is
-  "fail" if any critical or high severity finding. Focuses on new code, not
-  full codebase audit.
+  "fail" if any critical or high severity finding. Writes his own security review
+  artifact directly. Cannot Edit code or run Bash.
 
 ### Lois Lane — Documentation
 
@@ -198,23 +198,3 @@ Docs: [complete/skipped]
 
 For detailed artifact contracts and schema definitions, see
 [references/artifact-contracts.md](references/artifact-contracts.md).
-
-
-## Writing Artifacts for Read-Only Agents
-
-Wonder Woman and Green Lantern are read-only — they cannot write files. When
-they complete, you must write their artifact files on their behalf by extracting
-the JSON from their response.
-
-**Before writing, validate against the schema.** Read the target schema file
-first (`schemas/review.schema.json` or `schemas/security-review.schema.json`)
-and verify your JSON uses the exact field names the schema requires.
-
-Common errors to avoid:
-- `security-review.json`: Use `owasp_findings` (NOT `findings` or `owasp_check`)
-- `security-review.json`: `stride_analysis` values must be arrays of strings, not bare strings
-- `security-review.json`: Include `secrets_scan` with `clean` (boolean) and `findings` (array)
-- `review.json`: Use `issues` (NOT `findings`)
-
-Example: after Green Lantern completes, read `schemas/security-review.schema.json`,
-then write the artifact with validated field names.

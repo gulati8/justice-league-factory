@@ -24,9 +24,9 @@ software changes — then improve themselves over time.
 | Batman | Orchestrator | Read, Write, Agent, Bash | Coordinates all agents |
 | Martian Manhunter | Planner | Read, Glob, Grep, Write | artifacts/plan.json + architecture.md |
 | Cyborg | Coder | Read, Write, Edit, Bash | Working code + briefings |
-| Wonder Woman | Reviewer (read-only) | Read, Glob, Grep | artifacts/review.json |
+| Wonder Woman | Reviewer | Read, Glob, Grep, Write | artifacts/review.json |
 | Flash | QA/Tester | Read, Write, Edit, Bash | Tests + artifacts/test-results.json |
-| Green Lantern | Security (read-only) | Read, Glob, Grep | artifacts/security-review.json |
+| Green Lantern | Security | Read, Glob, Grep, Write | artifacts/security-review.json |
 | Lois Lane | Docs | Read, Glob, Write | Documentation files |
 | Oracle | Learner | Read, Glob, Grep, Write, Bash | improvements.json + PR |
 
