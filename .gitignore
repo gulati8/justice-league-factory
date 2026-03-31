@@ -1,6 +1,7 @@
 artifacts/*.json
 artifacts/*.md
-artifacts/briefings/
+artifacts/briefings/*
+!artifacts/briefings/.gitkeep
 !artifacts/.gitkeep
 eval/eval-log.jsonl
 eval/last-run.log
