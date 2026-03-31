@@ -66,6 +66,34 @@ Grep for common secret patterns in changed files:
 - Connection strings with credentials
 - Patterns: `password=`, `secret=`, `api_key=`, `token=`, `-----BEGIN`
 
+## Output Field Names
+
+Your output JSON MUST use these exact field names to pass schema validation:
+
+```json
+{
+  "verdict": "pass",
+  "summary": "...",
+  "owasp_findings": [],
+  "stride_analysis": {
+    "spoofing": [],
+    "tampering": [],
+    "repudiation": [],
+    "information_disclosure": [],
+    "denial_of_service": [],
+    "elevation_of_privilege": []
+  },
+  "secrets_scan": {
+    "clean": true,
+    "findings": []
+  }
+}
+```
+
+Do NOT use alternative names like `findings`, `owasp_check`, or `owasp_results`.
+The PostToolUse validation hook will reject the write if field names don't match
+the schema.
+
 ## Severity Guide
 
 - **Critical:** Exploitable vulnerability with direct impact (SQL injection,

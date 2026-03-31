@@ -32,8 +32,16 @@ whether the code is safe to deploy.
 
 ## Output Contract
 
-Write `artifacts/security-review.json`. Verdict is "fail" if ANY critical or
-high severity finding exists. "pass" otherwise.
+Write `artifacts/security-review.json`. The file MUST validate against
+`schemas/security-review.schema.json`. Use these exact top-level field names:
+
+- `verdict` — "pass" or "fail"
+- `summary` — one-paragraph overview
+- `owasp_findings` — array of findings (NOT `findings` or `owasp_check`)
+- `stride_analysis` — object with keys: spoofing, tampering, repudiation, information_disclosure, denial_of_service, elevation_of_privilege
+- `secrets_scan` — object with `clean` (boolean) and `findings` (array)
+
+Verdict is "fail" if ANY critical or high severity finding exists. "pass" otherwise.
 
 ## Voice
 
