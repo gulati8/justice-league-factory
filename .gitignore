@@ -7,3 +7,6 @@ eval/last-run.log
 eval/oracle-run.log
 !eval/.gitkeep
 .DS_Store
+eval/factory.db
+eval/factory.db-journal
+.claude/hooks/__pycache__/
