@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Plan",
+  "description": "Implementation plan produced by Martian Manhunter",
+  "type": "object",
+  "required": ["feature", "summary", "architecture", "tasks"],
+  "properties": {
+    "feature": {
+      "type": "string",
+      "description": "Name of the feature being implemented"
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-paragraph summary of what will be built and why"
+    },
+    "architecture": {
+      "type": "object",
+      "required": ["approach", "files_to_create", "files_to_modify", "interfaces"],
+      "properties": {
+        "approach": { "type": "string", "description": "High-level technical approach" },
+        "files_to_create": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "purpose"],
+            "properties": {
+              "path": { "type": "string" },
+              "purpose": { "type": "string" }
+            }
+          }
+        },
+        "files_to_modify": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "changes"],
+            "properties": {
+              "path": { "type": "string" },
+              "changes": { "type": "string" }
+            }
+          }
+        },
+        "interfaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "contract"],
+            "properties": {
+              "name": { "type": "string" },
+              "contract": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "description", "acceptance_criteria", "parallel_group"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "acceptance_criteria": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "parallel_group": {
+            "type": "string",
+            "description": "Tasks in the same group can run in parallel"
+          },
+          "files": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

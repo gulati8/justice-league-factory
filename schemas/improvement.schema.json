@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Improvement Proposals",
+  "description": "Improvement proposals produced by Oracle",
+  "type": "object",
+  "required": ["run_count_analyzed", "proposals"],
+  "properties": {
+    "run_count_analyzed": {
+      "type": "integer",
+      "description": "Number of factory runs in the eval history"
+    },
+    "patterns_detected": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Recurring patterns observed across runs"
+    },
+    "proposals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["target_agent", "change_type", "current_value", "proposed_value", "rationale", "evidence", "risk_level"],
+        "properties": {
+          "target_agent": { "type": "string" },
+          "change_type": {
+            "type": "string",
+            "enum": ["prompt", "tools", "contract", "new_agent"]
+          },
+          "current_value": { "type": "string" },
+          "proposed_value": { "type": "string" },
+          "rationale": { "type": "string" },
+          "evidence": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "References to specific eval-log entries that motivated this"
+          },
+          "risk_level": {
+            "type": "string",
+            "enum": ["safe", "needs_review", "dangerous"]
+          }
+        }
+      }
+    }
+  }
+}

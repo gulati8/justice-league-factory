@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Security Review",
+  "description": "Security review produced by Green Lantern",
+  "type": "object",
+  "required": ["verdict", "summary", "owasp_findings", "stride_analysis"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "fail"]
+    },
+    "summary": { "type": "string" },
+    "owasp_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "severity", "file", "description"],
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "OWASP Top 10 category (e.g., A01:2021-Broken Access Control)"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"]
+          },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "description": { "type": "string" },
+          "remediation": { "type": "string" }
+        }
+      }
+    },
+    "stride_analysis": {
+      "type": "object",
+      "properties": {
+        "spoofing": { "type": "array", "items": { "type": "string" } },
+        "tampering": { "type": "array", "items": { "type": "string" } },
+        "repudiation": { "type": "array", "items": { "type": "string" } },
+        "information_disclosure": { "type": "array", "items": { "type": "string" } },
+        "denial_of_service": { "type": "array", "items": { "type": "string" } },
+        "elevation_of_privilege": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "secrets_scan": {
+      "type": "object",
+      "properties": {
+        "clean": { "type": "boolean" },
+        "findings": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

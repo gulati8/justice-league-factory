@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Justice League Factory — Mission Control</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>JUSTICE LEAGUE FACTORY</h1>
+    <div id="status" class="status idle">IDLE</div>
+  </header>
+
+  <main>
+    <section id="agents-panel">
+      <h2>Agents</h2>
+      <div id="agents-grid" class="agents-grid">
+        <div class="agent-card" data-agent="batman"><div class="agent-icon">🦇</div><div class="agent-name">Batman</div><div class="agent-status">waiting</div></div>
+        <div class="agent-card" data-agent="martian-manhunter"><div class="agent-icon">👽</div><div class="agent-name">Martian Manhunter</div><div class="agent-status">waiting</div></div>
+        <div class="agent-card" data-agent="cyborg"><div class="agent-icon">🤖</div><div class="agent-name">Cyborg</div><div class="agent-status">waiting</div></div>
+        <div class="agent-card" data-agent="wonder-woman"><div class="agent-icon">⚔️</div><div class="agent-name">Wonder Woman</div><div class="agent-status">waiting</div></div>
+        <div class="agent-card" data-agent="flash"><div class="agent-icon">⚡</div><div class="agent-name">The Flash</div><div class="agent-status">waiting</div></div>
+        <div class="agent-card" data-agent="green-lantern"><div class="agent-icon">💚</div><div class="agent-name">Green Lantern</div><div class="agent-status">waiting</div></div>
+        <div class="agent-card" data-agent="lois-lane"><div class="agent-icon">📝</div><div class="agent-name">Lois Lane</div><div class="agent-status">waiting</div></div>
+        <div class="agent-card" data-agent="oracle"><div class="agent-icon">🔮</div><div class="agent-name">Oracle</div><div class="agent-status">waiting</div></div>
+      </div>
+    </section>
+
+    <section id="log-panel">
+      <h2>Activity Log</h2>
+      <div id="log-container" class="log-container">
+        <div class="log-entry system">Justice League Factory initialized. Waiting for mission...</div>
+      </div>
+    </section>
+
+    <section id="artifacts-panel">
+      <h2>Artifacts</h2>
+      <div id="artifacts-list" class="artifacts-list">
+        <div class="artifact-empty">No artifacts yet</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

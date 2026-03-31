@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Test Results",
+  "description": "Test results produced by The Flash",
+  "type": "object",
+  "required": ["verdict", "summary", "tests_written", "test_run"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "fail"]
+    },
+    "summary": { "type": "string" },
+    "tests_written": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "test_name", "covers"],
+        "properties": {
+          "file": { "type": "string" },
+          "test_name": { "type": "string" },
+          "covers": { "type": "string", "description": "Which acceptance criterion this test covers" }
+        }
+      }
+    },
+    "test_run": {
+      "type": "object",
+      "required": ["total", "passed", "failed"],
+      "properties": {
+        "total": { "type": "integer" },
+        "passed": { "type": "integer" },
+        "failed": { "type": "integer" },
+        "skipped": { "type": "integer" },
+        "command": { "type": "string", "description": "The exact command used to run tests" },
+        "output": { "type": "string", "description": "Raw test runner output" }
+      }
+    },
+    "coverage_gaps": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Acceptance criteria from the plan that lack test coverage"
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Code Review",
+  "description": "Code review produced by Wonder Woman",
+  "type": "object",
+  "required": ["verdict", "issues", "summary"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "fail"],
+      "description": "Overall pass/fail based on whether critical issues exist"
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-paragraph overall assessment"
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "file", "description"],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "warning", "info"]
+          },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "description": { "type": "string" },
+          "suggestion": { "type": "string" }
+        }
+      }
+    },
+    "plan_compliance": {
+      "type": "object",
+      "properties": {
+        "all_tasks_implemented": { "type": "boolean" },
+        "architecture_followed": { "type": "boolean" },
+        "missing_items": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
