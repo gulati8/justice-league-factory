@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""SubagentStop telemetry logger.
+"""Universal telemetry hook for the Justice League Factory.
 
-Reads JSON from stdin (SubagentStop event data) and logs agent completion
-telemetry to a SQLite database. Initializes the DB schema if needed.
+Handles ALL hook event types. Every event is logged to the `events` table.
+SubagentStop events additionally populate `agent_runs` and `agent_transcripts`
+with full transcript content and extracted token/model data.
 
 Usage: cat event.json | python3 log-telemetry.py /path/to/project
 """
@@ -23,47 +24,115 @@ def get_schema_path(project_dir: str) -> str:
 
 
 def init_db(db_path: str, schema_path: str) -> sqlite3.Connection:
-    """Initialize the database, creating tables if they don't exist."""
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    conn = sqlite3.connect(db_path)
-
+    conn = sqlite3.connect(db_path, timeout=10)
+    conn.execute("PRAGMA journal_mode=WAL")
     if os.path.isfile(schema_path):
         with open(schema_path, "r") as f:
-            schema_sql = f.read()
-        conn.executescript(schema_sql)
-    else:
-        print(
-            f"Warning: Schema file not found at {schema_path}",
-            file=sys.stderr,
-        )
-
+            conn.executescript(f.read())
     return conn
 
 
-def log_agent_run(conn: sqlite3.Connection, event: dict) -> int | None:
-    """Insert an agent run record. Returns the agent_run id."""
+def log_event(conn: sqlite3.Connection, event: dict) -> None:
+    """Log any hook event to the events table."""
     now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        "INSERT INTO events (session_id, event_type, timestamp, agent_type, agent_id, data) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (
+            event.get("session_id"),
+            event.get("hook_event_name", "unknown"),
+            now,
+            event.get("agent_type"),
+            event.get("agent_id"),
+            json.dumps(event),
+        ),
+    )
+    conn.commit()
 
-    # SubagentStop provides agent_type (e.g., "martian-manhunter", "cyborg")
-    agent = event.get("agent_type", event.get("agent_name", "unknown"))
+
+def parse_transcript(transcript_path: str) -> dict:
+    """Read a transcript JSONL file. Extract full content, tokens, and model."""
+    result = {
+        "full_transcript": None,
+        "prompt_text": None,
+        "model": None,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_creation_tokens": 0,
+    }
+
+    if not transcript_path or not os.path.isfile(transcript_path):
+        return result
+
+    try:
+        with open(transcript_path, "r") as f:
+            content = f.read()
+        result["full_transcript"] = content
+    except OSError:
+        return result
+
+    for line in content.strip().split("\n"):
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+
+        # First user message is the prompt
+        if result["prompt_text"] is None and entry.get("role") == "user":
+            c = entry.get("content", "")
+            if isinstance(c, list):
+                result["prompt_text"] = " ".join(
+                    p.get("text", "") for p in c if isinstance(p, dict)
+                )
+            else:
+                result["prompt_text"] = str(c)
+
+        # Model from message wrapper or top-level
+        if not result["model"]:
+            result["model"] = entry.get("model") or (
+                entry.get("message", {}) or {}
+            ).get("model")
+
+        # Token usage — check both top-level and nested under message
+        usage = entry.get("usage") or (entry.get("message", {}) or {}).get("usage")
+        if usage:
+            result["input_tokens"] += usage.get("input_tokens", 0)
+            result["output_tokens"] += usage.get("output_tokens", 0)
+            result["cache_read_tokens"] += usage.get("cache_read_input_tokens", 0)
+            result["cache_creation_tokens"] += usage.get(
+                "cache_creation_input_tokens", 0
+            )
+
+    return result
+
+
+def log_agent_run(conn: sqlite3.Connection, event: dict) -> int | None:
+    """Insert a structured agent run from a SubagentStop event."""
+    now = datetime.now(timezone.utc).isoformat()
+    agent = event.get("agent_type", "unknown")
+
+    transcript = parse_transcript(event.get("agent_transcript_path"))
 
     cursor = conn.execute(
-        """
-        INSERT INTO agent_runs (
+        """INSERT INTO agent_runs (
             run_id, agent, model, started_at, completed_at,
-            duration_ms, input_tokens, output_tokens, verdict,
-            retry_count, artifacts_produced
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
+            duration_ms, input_tokens, output_tokens,
+            cache_read_tokens, cache_creation_tokens,
+            verdict, retry_count, artifacts_produced
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             event.get("session_id"),
             agent,
-            event.get("model"),
+            transcript["model"] or event.get("model"),
             event.get("started_at", now),
-            event.get("completed_at", now),
+            now,
             event.get("duration_ms"),
-            event.get("input_tokens", 0),
-            event.get("output_tokens", 0),
+            transcript["input_tokens"],
+            transcript["output_tokens"],
+            transcript["cache_read_tokens"],
+            transcript["cache_creation_tokens"],
             event.get("verdict"),
             event.get("retry_count", 0),
             json.dumps(event.get("artifacts_produced"))
@@ -75,44 +144,31 @@ def log_agent_run(conn: sqlite3.Connection, event: dict) -> int | None:
     return cursor.lastrowid
 
 
-def log_transcript(conn: sqlite3.Connection, agent_run_id: int, event: dict) -> None:
-    """Store transcript data if available in the event.
-
-    SubagentStop provides:
-    - last_assistant_message: the agent's final output
-    - agent_transcript_path: path to the full transcript JSONL file on disk
-    """
+def log_transcript(
+    conn: sqlite3.Connection, agent_run_id: int, event: dict
+) -> None:
+    """Store the full transcript content in SQLite."""
+    transcript = parse_transcript(event.get("agent_transcript_path"))
     response_text = event.get("last_assistant_message")
-    transcript_path = event.get("agent_transcript_path")
 
-    # Try to read the full transcript from disk for the prompt
-    prompt_text = None
-    if transcript_path:
-        try:
-            with open(transcript_path, "r") as f:
-                lines = f.readlines()
-                # First user message in the transcript is typically the prompt
-                for line in lines:
-                    entry = json.loads(line)
-                    if entry.get("role") == "user":
-                        content = entry.get("content", "")
-                        if isinstance(content, list):
-                            prompt_text = " ".join(
-                                c.get("text", "") for c in content if isinstance(c, dict)
-                            )
-                        else:
-                            prompt_text = str(content)
-                        break
-        except (OSError, json.JSONDecodeError):
-            pass  # Transcript file may not be readable
-
-    if prompt_text or response_text:
+    if transcript["full_transcript"] or response_text:
         conn.execute(
-            """
-            INSERT INTO agent_transcripts (agent_run_id, prompt_text, response_text)
-            VALUES (?, ?, ?)
-            """,
-            (agent_run_id, prompt_text, response_text),
+            """INSERT INTO agent_transcripts (
+                agent_run_id, prompt_text, response_text, full_transcript,
+                model, total_input_tokens, total_output_tokens,
+                total_cache_read_tokens, total_cache_creation_tokens
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                agent_run_id,
+                transcript["prompt_text"],
+                response_text,
+                transcript["full_transcript"],
+                transcript["model"],
+                transcript["input_tokens"],
+                transcript["output_tokens"],
+                transcript["cache_read_tokens"],
+                transcript["cache_creation_tokens"],
+            ),
         )
         conn.commit()
 
@@ -124,21 +180,14 @@ def main() -> None:
 
     project_dir = sys.argv[1]
 
-    # Read event JSON from stdin
     try:
         raw = sys.stdin.read()
         if not raw.strip():
-            print("No input received on stdin", file=sys.stderr)
             sys.exit(0)
         event = json.loads(raw)
     except json.JSONDecodeError as e:
         print(f"Failed to parse event JSON: {e}", file=sys.stderr)
         sys.exit(1)
-
-    # Debug: dump raw event to see what fields SubagentStop actually provides
-    debug_path = os.path.join(project_dir, "eval", "hook-debug.jsonl")
-    with open(debug_path, "a") as f:
-        f.write(json.dumps({"timestamp": datetime.now(timezone.utc).isoformat(), "raw_event": event}) + "\n")
 
     db_path = get_db_path(project_dir)
     schema_path = get_schema_path(project_dir)
@@ -150,11 +199,20 @@ def main() -> None:
         sys.exit(1)
 
     try:
-        agent_run_id = log_agent_run(conn, event)
-        if agent_run_id:
-            log_transcript(conn, agent_run_id, event)
-        agent = event.get("agent_type", event.get("agent_name", "unknown"))
-        print(f"Logged telemetry for agent: {agent}", file=sys.stderr)
+        # Every event goes into the events table
+        log_event(conn, event)
+
+        # SubagentStop events also get structured agent run + transcript data
+        event_type = event.get("hook_event_name", "")
+        if event_type == "SubagentStop":
+            agent_run_id = log_agent_run(conn, event)
+            if agent_run_id:
+                log_transcript(conn, agent_run_id, event)
+            agent = event.get("agent_type", "unknown")
+            print(f"Logged SubagentStop for {agent}", file=sys.stderr)
+        else:
+            print(f"Logged {event_type} event", file=sys.stderr)
+
     except sqlite3.Error as e:
         print(f"Failed to log telemetry: {e}", file=sys.stderr)
         sys.exit(1)

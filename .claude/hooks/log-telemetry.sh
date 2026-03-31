@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SubagentStop hook
+# Universal telemetry hook — handles all event types.
 # Thin shell wrapper that reads stdin and pipes it to log-telemetry.py.
 
 set -euo pipefail
