@@ -1,28 +1,55 @@
 # Justice League Factory
 
-This is an agentic software factory powered by Claude Code. It coordinates specialized AI agents to plan, implement, review, test, secure, and document software changes.
+An agentic software factory built on Claude Code native primitives. Specialized
+AI agents collaborate to plan, implement, review, test, secure, and document
+software changes — then improve themselves over time.
 
-## How It Works
+## Architecture
 
-Each agent is defined in `agents/`. Each has a specific role, scoped tools, and a structured output contract. Batman (the orchestrator) dispatches agents via Claude Code's Agent tool. Agents communicate through structured artifacts in `artifacts/`.
+- **Agents** (`.claude/agents/`) — Each agent has YAML frontmatter defining
+  their name, tools, model, and skills. Tool restrictions are constraints
+  enforced by the system, not instructions in a prompt.
+- **Skills** (`.claude/skills/`) — Reusable methodology injected into agent
+  context. Customize these to match your team's standards.
+- **Hooks** (`.claude/settings.json`) — Deterministic guarantees: artifact
+  validation against JSON schemas, telemetry logging to SQLite.
+- **Schemas** (`schemas/`) — Structured contracts between agents.
+- **Telemetry** (`eval/factory.db`) — SQLite database with per-agent metrics
+  and transcripts. Oracle queries this to propose improvements.
 
 ## Agent Roster
 
-| Agent | Role | Output |
-|-------|------|--------|
-| Batman | Orchestrator | Coordinates all agents |
-| Martian Manhunter | Architect/Planner | artifacts/plan.json + artifacts/architecture.md |
-| Cyborg | Coder | Working code in the project repo |
-| Wonder Woman | Reviewer | artifacts/review.json |
-| The Flash | QA/Tester | Tests + artifacts/test-results.json |
-| Green Lantern | Security | artifacts/security-review.json |
-| Lois Lane | Docs | Documentation files |
-| Oracle | Learner | Improved agent files + PR |
+| Agent | Role | Tools | Output |
+|-------|------|-------|--------|
+| Batman | Orchestrator | Read, Write, Agent, Bash | Coordinates all agents |
+| Martian Manhunter | Planner | Read, Glob, Grep, Write | artifacts/plan.json + architecture.md |
+| Cyborg | Coder | Read, Write, Edit, Bash | Working code + briefings |
+| Wonder Woman | Reviewer (read-only) | Read, Glob, Grep | artifacts/review.json |
+| Flash | QA/Tester | Read, Write, Edit, Bash | Tests + artifacts/test-results.json |
+| Green Lantern | Security (read-only) | Read, Glob, Grep | artifacts/security-review.json |
+| Lois Lane | Docs | Read, Glob, Write | Documentation files |
+| Oracle | Learner | Read, Glob, Grep, Write, Bash | improvements.json + PR |
 
-## Artifact Contracts
+## Running the Factory
 
-All structured artifacts follow schemas defined in `schemas/`. Agents MUST validate their output against the relevant schema.
+```bash
+# Interactive: open Claude Code in this directory, then @batman
+claude --agent batman
 
-## Eval Log
+# Headless: against a project with a feature request
+./scripts/run-factory.sh /path/to/project /path/to/feature-request.md
 
-Every factory run appends results to `eval/eval-log.jsonl`. Oracle reads this history to propose improvements.
+# Self-improvement: run Oracle against telemetry history
+./scripts/run-oracle.sh
+
+# Dashboard: observe factory runs in real time
+./scripts/serve-dashboard.sh
+```
+
+## Customization
+
+- Add project-specific skills (e.g., `django-patterns`) — agents load them via
+  the `skills` frontmatter field
+- Adjust agent models in their frontmatter (`model: haiku` for cost savings)
+- Add new agents by creating `.claude/agents/<name>.md`
+- Tighten or loosen tool access in agent frontmatter
