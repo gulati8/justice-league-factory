@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the Justice League factory against a project
+# Run the Justice League factory headless against a project.
 # Usage: ./scripts/run-factory.sh /path/to/project /path/to/feature-request.md
 set -euo pipefail
 
@@ -13,37 +13,36 @@ echo "Feature: $FEATURE_REQUEST"
 echo "Factory: $FACTORY_DIR"
 echo ""
 
-# Read Batman's identity
-BATMAN_PROMPT=$(cat "$FACTORY_DIR/agents/batman.md")
-
-# Read the feature request
 FEATURE=$(cat "$FEATURE_REQUEST")
 
-# Ensure artifacts directory exists and is clean
+# Ensure artifacts directory is ready
 mkdir -p "$FACTORY_DIR/artifacts/briefings"
 
-# Construct the full prompt
-PROMPT="$BATMAN_PROMPT
+# Initialize telemetry DB
+sqlite3 "$FACTORY_DIR/eval/factory.db" < "$FACTORY_DIR/eval/init-db.sql" 2>/dev/null || true
 
-## Mission
+# Run Batman headless — he orchestrates everything via agent dispatch.
+# Agents are defined in .claude/agents/ with proper frontmatter (tools, model, skills).
+# Batman dispatches them by name; each gets its own isolated context.
+claude -p "You are running the Justice League Factory.
 
-You are running the Justice League Factory against the project at: $PROJECT_DIR
-
-The factory repo with agent definitions and schemas is at: $FACTORY_DIR
+Project directory: $PROJECT_DIR
+Factory directory: $FACTORY_DIR
 
 Feature request:
 $FEATURE
 
-Execute the full factory workflow. Dispatch each agent as described in your workflow. Write all artifacts to $FACTORY_DIR/artifacts/.
+Execute the full factory workflow. Dispatch agents to plan, implement, review,
+test, secure, and document this feature. Write all artifacts to $FACTORY_DIR/artifacts/.
 
-IMPORTANT: When dispatching subagents, read their full identity from $FACTORY_DIR/agents/<name>.md and include it in the Agent prompt. State their tool restrictions explicitly."
-
-# Run headless
-claude -p "$PROMPT" \
-  --allowedTools "Read,Write,Agent,Bash,Glob,Grep" \
+When dispatching agents, use their names (e.g., martian-manhunter, cyborg, wonder-woman).
+Each agent's tools and skills are configured in their agent definitions." \
+  --agent batman \
+  --allowedTools "Read,Write,Agent,Bash,Glob,Grep,Edit" \
   2>&1 | tee "$FACTORY_DIR/eval/last-run.log"
 
 echo ""
 echo "=== Factory run complete ==="
 echo "Artifacts: $FACTORY_DIR/artifacts/"
+echo "Telemetry: $FACTORY_DIR/eval/factory.db"
 echo "Log: $FACTORY_DIR/eval/last-run.log"
