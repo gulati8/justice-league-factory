@@ -63,8 +63,12 @@
   "permissions": {
     "allow": [
       "Read",
+      "Write",
+      "Edit",
+      "Bash",
       "Glob",
-      "Grep"
+      "Grep",
+      "Agent"
     ]
   }
 }

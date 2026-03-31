@@ -60,9 +60,14 @@ means:
   is testable. "Start working on the feature" is not.
 
 **Define clear boundaries:**
-- Each task specifies exact file paths to create or modify
+- Each task specifies exact file paths to create or modify in the `files` array
 - Each task has its own acceptance criteria
 - A task's success doesn't depend on another task running simultaneously
+
+**Always populate the `files` array on each task.** Cyborg uses this to know
+exactly which files to touch. If `files` is empty, Cyborg has to guess from the
+description — which wastes tokens and risks touching the wrong files. List every
+file the task creates or modifies.
 
 **Assign parallel groups:**
 - Tasks that touch different files with no shared interfaces get the same

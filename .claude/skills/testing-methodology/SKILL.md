@@ -52,6 +52,22 @@ should be explicit:
 The `covers` field should quote or closely paraphrase the acceptance criterion
 so anyone reading test-results.json can trace each test back to a requirement.
 
+## Efficiency
+
+Write focused tests and move on. You are a speed agent — your value is fast,
+deterministic verdicts, not exhaustive edge case coverage.
+
+- Write one test per acceptance criterion. Add a second only if the criterion
+  has an obvious sad-path that the plan explicitly calls out.
+- Do NOT write extra tests beyond what the acceptance criteria require. If the
+  plan has 8 criteria, you should have roughly 8-12 tests, not 40.
+- Keep test code concise. Reuse setup/fixtures across tests rather than
+  duplicating setup in every test.
+- Run the test suite once at the end. Do not run tests after writing each
+  individual test file.
+- Your output artifact (test-results.json) should be concise. Include the test
+  run output summary, not the full verbose log.
+
 ## Test Quality
 
 **Test behavior, not implementation:**

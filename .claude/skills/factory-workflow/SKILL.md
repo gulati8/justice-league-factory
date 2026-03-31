@@ -150,8 +150,15 @@ tool calls in a single response — Claude Code runs them concurrently.
 
 **When to parallelize:**
 - Multiple Cyborgs working on tasks in the same `parallel_group`
-- Wonder Woman + Green Lantern + Lois Lane (all read code, none modify it)
-- Flash can run alongside Green Lantern and Lois Lane
+- After Cyborg completes, dispatch Wonder Woman + Green Lantern + Lois Lane +
+  Flash ALL at once in a single response. All four are read-only against the
+  code — they cannot conflict. Do NOT dispatch Wonder Woman first and then the
+  others after — that wastes time. All four go simultaneously.
+
+**Why all four at once:** Wonder Woman, Green Lantern, and Lois Lane only read
+code. Flash reads code and writes tests (in a separate test directory). None of
+them modify implementation files, so there is no conflict. Dispatching them
+sequentially when they could run in parallel adds minutes of unnecessary wait.
 
 ### Retry on Failure
 When a quality gate agent (Wonder Woman or Flash) returns a "fail" verdict:
