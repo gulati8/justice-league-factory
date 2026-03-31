@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Serve the dashboard with a simple API backend for SQLite queries.
+# Serve the dashboard with API endpoints for SQLite telemetry.
 # Usage: ./scripts/serve-dashboard.sh [port]
 set -euo pipefail
 
@@ -18,6 +18,7 @@ echo ""
 python3 -c "
 import http.server
 import json
+import re
 import sqlite3
 import os
 from urllib.parse import urlparse, parse_qs
@@ -31,14 +32,34 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
-        if parsed.path == '/api/runs':
+        path = parsed.path
+        params = parse_qs(parsed.query)
+
+        if path == '/api/events':
+            self.serve_events(params)
+        elif path == '/api/runs':
             self.serve_runs()
-        elif parsed.path == '/api/agents':
-            self.serve_agents(parse_qs(parsed.query))
-        elif parsed.path == '/api/latest':
+        elif path == '/api/agents':
+            self.serve_agents(params)
+        elif path == '/api/latest':
             self.serve_latest()
+        elif re.match(r'^/api/transcript/(\d+)$', path):
+            agent_run_id = int(re.match(r'^/api/transcript/(\d+)$', path).group(1))
+            self.serve_transcript(agent_run_id)
         else:
             super().do_GET()
+
+    def serve_events(self, params):
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        since = params.get('since', ['0'])[0]
+        limit = params.get('limit', ['200'])[0]
+        rows = conn.execute(
+            'SELECT * FROM events WHERE id > ? ORDER BY id ASC LIMIT ?',
+            (int(since), int(limit))
+        ).fetchall()
+        conn.close()
+        self.json_response([dict(r) for r in rows])
 
     def serve_runs(self):
         conn = sqlite3.connect(DB_PATH)
@@ -74,6 +95,20 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         conn.close()
         self.json_response([dict(r) for r in rows])
 
+    def serve_transcript(self, agent_run_id):
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            'SELECT * FROM agent_transcripts WHERE agent_run_id = ?',
+            (agent_run_id,)
+        ).fetchone()
+        conn.close()
+        if row:
+            self.json_response(dict(row))
+        else:
+            self.send_response(404)
+            self.end_headers()
+
     def json_response(self, data):
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
@@ -82,7 +117,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps(data, default=str).encode())
 
     def log_message(self, format, *args):
-        pass  # Suppress request logging noise
+        pass
 
 print('Dashboard: http://localhost:$PORT')
 http.server.HTTPServer(('', $PORT), DashboardHandler).serve_forever()

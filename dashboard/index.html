@@ -13,35 +13,39 @@
     <div id="status" class="status idle">IDLE</div>
   </header>
 
-  <main>
-    <section id="agents-panel">
-      <h2>Agents</h2>
-      <div id="agents-grid" class="agents-grid">
-        <div class="agent-card" data-agent="batman"><div class="agent-icon">🦇</div><div class="agent-name">Batman</div><div class="agent-status">waiting</div></div>
-        <div class="agent-card" data-agent="martian-manhunter"><div class="agent-icon">👽</div><div class="agent-name">Martian Manhunter</div><div class="agent-status">waiting</div></div>
-        <div class="agent-card" data-agent="cyborg"><div class="agent-icon">🤖</div><div class="agent-name">Cyborg</div><div class="agent-status">waiting</div></div>
-        <div class="agent-card" data-agent="wonder-woman"><div class="agent-icon">⚔️</div><div class="agent-name">Wonder Woman</div><div class="agent-status">waiting</div></div>
-        <div class="agent-card" data-agent="flash"><div class="agent-icon">⚡</div><div class="agent-name">The Flash</div><div class="agent-status">waiting</div></div>
-        <div class="agent-card" data-agent="green-lantern"><div class="agent-icon">💚</div><div class="agent-name">Green Lantern</div><div class="agent-status">waiting</div></div>
-        <div class="agent-card" data-agent="lois-lane"><div class="agent-icon">📝</div><div class="agent-name">Lois Lane</div><div class="agent-status">waiting</div></div>
-        <div class="agent-card" data-agent="oracle"><div class="agent-icon">🔮</div><div class="agent-name">Oracle</div><div class="agent-status">waiting</div></div>
-      </div>
-    </section>
+  <div id="agents-bar" class="agents-bar">
+    <div class="agent-chip" data-agent="batman"><span class="chip-icon">🦇</span><span class="chip-name">Batman</span><span class="chip-status">--</span></div>
+    <div class="agent-chip" data-agent="martian-manhunter"><span class="chip-icon">👽</span><span class="chip-name">Martian Manhunter</span><span class="chip-status">--</span></div>
+    <div class="agent-chip" data-agent="cyborg"><span class="chip-icon">🤖</span><span class="chip-name">Cyborg</span><span class="chip-status">--</span></div>
+    <div class="agent-chip" data-agent="wonder-woman"><span class="chip-icon">⚔️</span><span class="chip-name">Wonder Woman</span><span class="chip-status">--</span></div>
+    <div class="agent-chip" data-agent="flash"><span class="chip-icon">⚡</span><span class="chip-name">The Flash</span><span class="chip-status">--</span></div>
+    <div class="agent-chip" data-agent="green-lantern"><span class="chip-icon">💚</span><span class="chip-name">Green Lantern</span><span class="chip-status">--</span></div>
+    <div class="agent-chip" data-agent="lois-lane"><span class="chip-icon">📝</span><span class="chip-name">Lois Lane</span><span class="chip-status">--</span></div>
+    <div class="agent-chip" data-agent="oracle"><span class="chip-icon">🔮</span><span class="chip-name">Oracle</span><span class="chip-status">--</span></div>
+  </div>
 
-    <section id="log-panel">
-      <h2>Activity Log</h2>
-      <div id="log-container" class="log-container">
-        <div class="log-entry system">Justice League Factory initialized. Waiting for mission...</div>
+  <main id="log-viewer">
+    <div id="log-entries">
+      <div class="log-row system-row">
+        <span class="log-ts">--:--:--</span>
+        <span class="log-type">system</span>
+        <span class="log-agent">--</span>
+        <span class="log-detail">Justice League Factory initialized. Waiting for mission...</span>
       </div>
-    </section>
-
-    <section id="artifacts-panel">
-      <h2>Artifacts</h2>
-      <div id="artifacts-list" class="artifacts-list">
-        <div class="artifact-empty">No artifacts yet</div>
-      </div>
-    </section>
+    </div>
   </main>
+
+  <!-- Transcript overlay -->
+  <div id="transcript-overlay" class="transcript-overlay hidden">
+    <div class="transcript-panel">
+      <div class="transcript-header">
+        <h3 id="transcript-title">Transcript</h3>
+        <button id="transcript-close" class="transcript-close">&times;</button>
+      </div>
+      <div class="transcript-meta" id="transcript-meta"></div>
+      <pre id="transcript-content" class="transcript-content"></pre>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

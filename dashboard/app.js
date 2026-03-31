@@ -1,17 +1,18 @@
-// Justice League Factory — Dashboard
-// Polls SQLite telemetry via API, or falls back to simulated demo mode
+// Justice League Factory — Log Viewer Dashboard
+// Polls /api/events for all hook events, displays chronologically.
+// SubagentStop rows are clickable to view full transcripts.
 
 const POLL_INTERVAL = 2000;
-
-const logContainer = document.getElementById('log-container');
+const logEntries = document.getElementById('log-entries');
 const statusEl = document.getElementById('status');
-const artifactsList = document.getElementById('artifacts-list');
+const overlay = document.getElementById('transcript-overlay');
+const transcriptTitle = document.getElementById('transcript-title');
+const transcriptMeta = document.getElementById('transcript-meta');
+const transcriptContent = document.getElementById('transcript-content');
 
-let lastSeenId = 0;
-let knownArtifacts = new Set();
-let apiAvailable = false;
+let lastEventId = 0;
+let agentStates = {};
 
-// Agent name mapping (DB names → display names)
 const AGENT_DISPLAY = {
   'batman': 'Batman',
   'martian-manhunter': 'Martian Manhunter',
@@ -20,242 +21,354 @@ const AGENT_DISPLAY = {
   'flash': 'The Flash',
   'green-lantern': 'Green Lantern',
   'lois-lane': 'Lois Lane',
-  'oracle': 'Oracle'
+  'oracle': 'Oracle',
+  'Explore': 'Explore (scout)'
 };
 
-// Artifact mapping per agent
-const AGENT_ARTIFACTS = {
-  'martian-manhunter': ['plan.json', 'architecture.md'],
-  'wonder-woman': ['review.json'],
-  'flash': ['test-results.json'],
-  'green-lantern': ['security-review.json'],
-  'oracle': ['improvements.json']
-};
+// Format event data into a human-readable detail string
+function formatEventDetail(event) {
+  let data;
+  try { data = JSON.parse(event.data); } catch { return ''; }
 
-// Poll the SQLite-backed API for agent run data
-async function pollAPI() {
-  try {
-    const res = await fetch('/api/latest');
-    if (!res.ok) return;
-    apiAvailable = true;
+  const type = event.event_type;
 
-    const runs = await res.json();
-    if (runs.length === 0) return;
+  if (type === 'SubagentStart') {
+    return 'Agent dispatched';
+  }
+  if (type === 'SubagentStop') {
+    const msg = data.last_assistant_message || '';
+    const preview = msg.length > 200 ? msg.substring(0, 200) + '...' : msg;
+    return preview;
+  }
+  if (type === 'PreToolUse') {
+    const tool = data.tool_name || '?';
+    const input = data.tool_input || {};
+    if (tool === 'Read' && input.file_path) return 'Read ' + input.file_path;
+    if (tool === 'Write' && input.file_path) return 'Write ' + input.file_path;
+    if (tool === 'Edit' && input.file_path) return 'Edit ' + input.file_path;
+    if (tool === 'Bash' && input.command) return 'Bash: ' + input.command.substring(0, 100);
+    if (tool === 'Glob' && input.pattern) return 'Glob: ' + input.pattern;
+    if (tool === 'Grep' && input.pattern) return 'Grep: ' + input.pattern;
+    if (tool === 'Agent') return 'Dispatch: ' + (input.agent_type || input.name || '?');
+    return tool;
+  }
+  if (type === 'PostToolUse') {
+    const tool = data.tool_name || '?';
+    return tool + ' completed';
+  }
+  if (type === 'Stop') {
+    return 'Session ended';
+  }
+  return type;
+}
 
-    // Process new entries
-    for (const run of runs) {
-      if (run.id <= lastSeenId) continue;
-      lastSeenId = run.id;
+// Render a single event as a log row
+function renderEvent(event) {
+  const row = document.createElement('div');
+  row.className = 'log-row';
 
-      const agent = run.agent || 'unknown';
-      const duration = run.duration_ms ? `${(run.duration_ms / 1000).toFixed(1)}s` : '';
-      const tokens = run.output_tokens ? `${run.output_tokens.toLocaleString()} tokens` : '';
+  const ts = event.timestamp ? new Date(event.timestamp).toLocaleTimeString() : '--:--:--';
+  const type = event.event_type || 'unknown';
+  const agent = event.agent_type || '--';
+  const displayAgent = AGENT_DISPLAY[agent] || agent;
+  const detail = formatEventDetail(event);
 
-      // Determine status from verdict or presence
-      let status = 'done';
-      if (run.verdict === 'fail') status = 'error';
+  let extraHtml = '';
 
-      updateAgentStatus(agent, status);
+  // For SubagentStop, add transcript link
+  if (type === 'SubagentStop') {
+    row.classList.add('clickable');
+    row.dataset.agentType = agent;
+    extraHtml = '<span class="transcript-link">[view transcript]</span>';
+  }
 
-      // Build log message
-      let msg = `Complete`;
-      if (run.verdict) msg += ` — verdict: ${run.verdict.toUpperCase()}`;
-      if (duration) msg += ` (${duration})`;
-      if (tokens) msg += ` [${tokens}]`;
-      addLogEntry(agent, msg);
+  row.innerHTML =
+    '<span class="log-ts">' + ts + '</span>' +
+    '<span class="log-type ' + type + '">' + type + '</span>' +
+    '<span class="log-agent ' + agent + '">' + displayAgent + '</span>' +
+    '<span class="log-detail">' + escapeHtml(detail) + extraHtml + '</span>';
 
-      // Add known artifacts for this agent
-      if (AGENT_ARTIFACTS[agent]) {
-        for (const artifact of AGENT_ARTIFACTS[agent]) {
-          addArtifact(artifact, agent);
-        }
-      }
-      // Cyborg briefings
-      if (agent === 'cyborg' && run.artifacts_produced) {
-        try {
-          const artifacts = JSON.parse(run.artifacts_produced);
-          for (const a of artifacts) addArtifact(a, 'cyborg');
-        } catch {}
-      }
-    }
+  // Click handler for transcript
+  if (type === 'SubagentStop') {
+    row.addEventListener('click', function() { openTranscript(event); });
+  }
 
-    // Update global status
-    const doneCards = document.querySelectorAll('.agent-card.done, .agent-card.error');
-    if (doneCards.length > 0) {
-      const hasErrors = document.querySelectorAll('.agent-card.error').length > 0;
-      if (doneCards.length >= 7) { // All non-Oracle agents done
-        statusEl.className = hasErrors ? 'status failed' : 'status complete';
-        statusEl.textContent = hasErrors ? 'FAILED' : 'COMPLETE';
-      } else {
-        statusEl.className = 'status running';
-        statusEl.textContent = 'RUNNING';
-      }
-    }
-  } catch {
-    // API not available — simulate mode still works
+  return row;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Update agent chip status
+function updateAgentChip(agent, state) {
+  const chip = document.querySelector('[data-agent="' + agent + '"]');
+  if (!chip) return;
+  chip.classList.remove('active', 'done', 'error');
+  if (state === 'active') chip.classList.add('active');
+  else if (state === 'done') chip.classList.add('done');
+  else if (state === 'error') chip.classList.add('error');
+
+  const statusSpan = chip.querySelector('.chip-status');
+  if (statusSpan) statusSpan.textContent = state;
+  agentStates[agent] = state;
+}
+
+// Process events and update agent states
+function processEvent(event) {
+  const type = event.event_type;
+  const agent = event.agent_type;
+  if (!agent) return;
+
+  if (type === 'SubagentStart') {
+    updateAgentChip(agent, 'active');
+  } else if (type === 'SubagentStop') {
+    let verdict = null;
+    try {
+      const data = JSON.parse(event.data);
+      verdict = data.verdict;
+    } catch {}
+    updateAgentChip(agent, verdict === 'fail' ? 'error' : 'done');
   }
 }
 
-function addLogEntry(agent, message) {
-  const el = document.createElement('div');
-  el.className = `log-entry ${agent}`;
-  const time = new Date().toLocaleTimeString();
-  const displayName = AGENT_DISPLAY[agent] || agent;
-  el.textContent = `[${time}] [${displayName}] ${message}`;
-  logContainer.appendChild(el);
-  logContainer.scrollTop = logContainer.scrollHeight;
-}
+// Open transcript overlay
+async function openTranscript(event) {
+  const agent = event.agent_type || 'unknown';
+  const displayAgent = AGENT_DISPLAY[agent] || agent;
+  transcriptTitle.textContent = displayAgent + ' — Transcript';
 
-function updateAgentStatus(agentName, status) {
-  const card = document.querySelector(`[data-agent="${agentName}"]`);
-  if (!card) return;
-
-  card.classList.remove('active', 'done', 'error');
-  if (status === 'active' || status === 'running') card.classList.add('active');
-  else if (status === 'done' || status === 'success') card.classList.add('done');
-  else if (status === 'error' || status === 'failed') card.classList.add('error');
-
-  const statusText = card.querySelector('.agent-status');
-  if (statusText) statusText.textContent = status;
-
-  // Update global status
-  const activeCards = document.querySelectorAll('.agent-card.active');
-  if (activeCards.length > 0) {
-    statusEl.className = 'status running';
-    statusEl.textContent = 'RUNNING';
-  }
-}
-
-function addArtifact(name, agent) {
-  if (knownArtifacts.has(name)) return;
-  knownArtifacts.add(name);
-
-  const empty = artifactsList.querySelector('.artifact-empty');
-  if (empty) empty.remove();
-
-  const displayName = AGENT_DISPLAY[agent] || agent;
-  const el = document.createElement('div');
-  el.className = 'artifact-item';
-  el.innerHTML = `<div class="artifact-name">${name}</div><div class="artifact-agent">by ${displayName}</div>`;
-  artifactsList.appendChild(el);
-}
-
-// Load historical data on startup
-async function loadHistory() {
   try {
     const res = await fetch('/api/agents');
     if (!res.ok) return;
-    apiAvailable = true;
-
     const runs = await res.json();
-    if (runs.length === 0) return;
 
-    statusEl.className = 'status complete';
-    statusEl.textContent = 'COMPLETE';
+    let data;
+    try { data = JSON.parse(event.data); } catch { return; }
 
-    for (const run of runs) {
-      const agent = run.agent || 'unknown';
-      let status = 'done';
-      if (run.verdict === 'fail') status = 'error';
-      updateAgentStatus(agent, status);
+    // Match by session_id and agent
+    const match = runs.find(function(r) {
+      return r.run_id === data.session_id && r.agent === agent;
+    });
 
-      const duration = run.duration_ms ? `${(run.duration_ms / 1000).toFixed(1)}s` : '';
-      const tokens = run.output_tokens ? `${run.output_tokens.toLocaleString()} tokens` : '';
-      let msg = `Complete`;
-      if (run.verdict) msg += ` — verdict: ${run.verdict.toUpperCase()}`;
-      if (duration) msg += ` (${duration})`;
-      if (tokens) msg += ` [${tokens}]`;
-      addLogEntry(agent, msg);
+    if (!match) {
+      transcriptMeta.textContent = 'No transcript found';
+      transcriptContent.textContent = data.last_assistant_message || 'No content';
+      overlay.classList.remove('hidden');
+      return;
+    }
 
-      if (AGENT_ARTIFACTS[agent]) {
-        for (const artifact of AGENT_ARTIFACTS[agent]) {
-          addArtifact(artifact, agent);
+    // Fetch full transcript
+    const tRes = await fetch('/api/transcript/' + match.id);
+    if (!tRes.ok) {
+      transcriptContent.textContent = data.last_assistant_message || 'Transcript not available';
+      overlay.classList.remove('hidden');
+      return;
+    }
+
+    const transcript = await tRes.json();
+    const tokens = 'In: ' + (match.input_tokens || 0).toLocaleString() + ' | Out: ' + (match.output_tokens || 0).toLocaleString();
+    const model = transcript.model || match.model || 'unknown';
+    transcriptMeta.innerHTML = '<span>Model: ' + model + '</span><span>' + tokens + '</span>';
+
+    // Render transcript — parse JSONL into readable format
+    if (transcript.full_transcript) {
+      transcriptContent.textContent = formatTranscript(transcript.full_transcript);
+    } else {
+      transcriptContent.textContent =
+        '--- PROMPT ---\n' + (transcript.prompt_text || '(not captured)') +
+        '\n\n--- RESPONSE ---\n' + (transcript.response_text || '(not captured)');
+    }
+  } catch (err) {
+    transcriptContent.textContent = 'Error loading transcript: ' + err.message;
+  }
+
+  overlay.classList.remove('hidden');
+}
+
+// Format JSONL transcript into readable text
+function formatTranscript(jsonl) {
+  const lines = jsonl.trim().split('\n');
+  let output = '';
+  for (const line of lines) {
+    try {
+      const entry = JSON.parse(line);
+      const role = entry.role || entry.type || '?';
+      let content = '';
+
+      if (entry.content) {
+        if (typeof entry.content === 'string') {
+          content = entry.content;
+        } else if (Array.isArray(entry.content)) {
+          content = entry.content
+            .map(function(c) { return c.text || c.tool_use_id || JSON.stringify(c); })
+            .join('\n');
         }
+      } else if (entry.message) {
+        content = JSON.stringify(entry.message, null, 2);
       }
 
-      if (run.id > lastSeenId) lastSeenId = run.id;
+      if (content) {
+        output += '--- ' + role.toUpperCase() + ' ---\n' + content + '\n\n';
+      }
+    } catch (e) {
+      output += line + '\n';
     }
-  } catch {
-    // No API — waiting for simulate or live run
+  }
+  return output || jsonl;
+}
+
+// Close transcript overlay
+document.getElementById('transcript-close').addEventListener('click', function() {
+  overlay.classList.add('hidden');
+});
+document.getElementById('transcript-overlay').addEventListener('click', function(e) {
+  if (e.target === overlay) overlay.classList.add('hidden');
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') overlay.classList.add('hidden');
+});
+
+// Poll for new events
+async function poll() {
+  try {
+    const res = await fetch('/api/events?since=' + lastEventId);
+    if (!res.ok) return;
+
+    const events = await res.json();
+    if (events.length === 0) return;
+
+    // Update status to running if we're getting events
+    if (statusEl.textContent === 'IDLE') {
+      statusEl.className = 'status running';
+      statusEl.textContent = 'RUNNING';
+    }
+
+    const viewer = document.getElementById('log-viewer');
+    const isScrolledToBottom = viewer.scrollHeight - viewer.scrollTop - viewer.clientHeight < 50;
+
+    for (const event of events) {
+      processEvent(event);
+      logEntries.appendChild(renderEvent(event));
+      if (event.id > lastEventId) lastEventId = event.id;
+
+      // If we see a Stop event, mark as complete
+      if (event.event_type === 'Stop') {
+        const hasErrors = Object.values(agentStates).some(function(s) { return s === 'error'; });
+        statusEl.className = hasErrors ? 'status failed' : 'status complete';
+        statusEl.textContent = hasErrors ? 'FAILED' : 'COMPLETE';
+      }
+    }
+
+    // Auto-scroll if user was already at bottom
+    if (isScrolledToBottom) {
+      viewer.scrollTop = viewer.scrollHeight;
+    }
+  } catch (e) {
+    // API not available yet
   }
 }
 
-// Demo mode: manually drive the dashboard with simulated events
-window.simulate = {
-  activate(agent) { updateAgentStatus(agent, 'active'); addLogEntry(agent, 'Starting...'); },
-  complete(agent) { updateAgentStatus(agent, 'done'); addLogEntry(agent, 'Complete.'); },
-  fail(agent, msg) { updateAgentStatus(agent, 'error'); addLogEntry(agent, `Failed: ${msg}`); },
-  log(agent, msg) { addLogEntry(agent, msg); },
-  artifact(name, agent) { addArtifact(name, agent); },
-  running() { statusEl.className = 'status running'; statusEl.textContent = 'RUNNING'; },
-  done() { statusEl.className = 'status complete'; statusEl.textContent = 'COMPLETE'; },
+// Load existing events on startup
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/events?since=0&limit=1000');
+    if (!res.ok) return;
 
-  // Run a pre-scripted demo sequence
-  async demo() {
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const events = await res.json();
+    if (events.length === 0) return;
+
+    statusEl.className = 'status complete';
+    statusEl.textContent = 'HISTORY';
+
+    for (const event of events) {
+      processEvent(event);
+      logEntries.appendChild(renderEvent(event));
+      if (event.id > lastEventId) lastEventId = event.id;
+    }
+
+    document.getElementById('log-viewer').scrollTop =
+      document.getElementById('log-viewer').scrollHeight;
+  } catch (e) {
+    // No data yet
+  }
+}
+
+// Demo mode: scripted simulation (no API needed)
+window.simulate = {
+  _addRow: function(type, agent, detail) {
+    const row = document.createElement('div');
+    row.className = 'log-row';
+    const ts = new Date().toLocaleTimeString();
+    const displayAgent = AGENT_DISPLAY[agent] || agent || '--';
+    row.innerHTML =
+      '<span class="log-ts">' + ts + '</span>' +
+      '<span class="log-type ' + type + '">' + type + '</span>' +
+      '<span class="log-agent ' + (agent || '') + '">' + displayAgent + '</span>' +
+      '<span class="log-detail">' + escapeHtml(detail) + '</span>';
+    logEntries.appendChild(row);
+    document.getElementById('log-viewer').scrollTop =
+      document.getElementById('log-viewer').scrollHeight;
+  },
+
+  start: function(agent) { updateAgentChip(agent, 'active'); this._addRow('SubagentStart', agent, 'Agent dispatched'); },
+  stop: function(agent, detail) { updateAgentChip(agent, 'done'); this._addRow('SubagentStop', agent, detail || 'Complete'); },
+  fail: function(agent, detail) { updateAgentChip(agent, 'error'); this._addRow('SubagentStop', agent, detail || 'Failed'); },
+  tool: function(agent, detail) { this._addRow('PostToolUse', agent, detail); },
+  running: function() { statusEl.className = 'status running'; statusEl.textContent = 'RUNNING'; },
+  done: function() { statusEl.className = 'status complete'; statusEl.textContent = 'COMPLETE'; },
+
+  demo: async function() {
+    const sleep = function(ms) { return new Promise(function(r) { setTimeout(r, ms); }); };
 
     this.running();
-    this.activate('batman');
-    this.log('batman', 'Mission received. Dispatching Martian Manhunter for planning...');
+    this.start('batman');
+    this._addRow('PostToolUse', 'batman', 'Read feature-request.md');
     await sleep(1500);
 
-    this.activate('martian-manhunter');
-    this.log('martian-manhunter', 'Reading feature request and exploring codebase...');
+    this.start('martian-manhunter');
+    this.tool('martian-manhunter', 'Read: scanning 12 source files...');
     await sleep(2000);
-    this.log('martian-manhunter', 'Decomposing into 5 tasks across 2 parallel groups...');
-    await sleep(1500);
-    this.artifact('plan.json', 'martian-manhunter');
-    this.artifact('architecture.md', 'martian-manhunter');
-    this.complete('martian-manhunter');
-    this.log('batman', 'Plan received. Dispatching Cyborg x3 for parallel group 1...');
+    this.tool('martian-manhunter', 'Write artifacts/plan.json');
+    this.tool('martian-manhunter', 'Write artifacts/architecture.md');
+    this.stop('martian-manhunter', 'Plan complete — 5 tasks across 2 parallel groups');
     await sleep(1000);
 
-    this.activate('cyborg');
-    this.log('cyborg', 'Parallel group 1: task-001, task-003, task-005 dispatched simultaneously...');
+    this.start('cyborg');
+    this.tool('cyborg', 'Read artifacts/plan.json');
+    this.tool('cyborg', 'Edit src/components/PetAvatar.tsx');
     await sleep(2500);
-    this.log('cyborg', 'Group 1 complete. Dispatching group 2: task-002, task-004...');
-    await sleep(2000);
-    this.artifact('briefings/cyborg-task-001.json', 'cyborg');
-    this.artifact('briefings/cyborg-task-003.json', 'cyborg');
-    this.artifact('briefings/cyborg-task-005.json', 'cyborg');
-    this.artifact('briefings/cyborg-task-002.json', 'cyborg');
-    this.artifact('briefings/cyborg-task-004.json', 'cyborg');
-    this.complete('cyborg');
-    this.log('batman', 'Implementation complete. Dispatching quality gates in parallel...');
+    this.tool('cyborg', 'Bash: npm run build — success');
+    this.tool('cyborg', 'Write artifacts/briefings/cyborg-task-001.json');
+    this.stop('cyborg', 'All tasks implemented. 5 files created, 3 modified.');
     await sleep(1000);
 
-    this.activate('wonder-woman');
-    this.activate('flash');
-    this.activate('green-lantern');
-    this.activate('lois-lane');
-    this.log('wonder-woman', 'The Lasso of Truth compels me to examine this code...');
-    this.log('flash', 'Scanning 18 acceptance criteria... writing tests...');
-    this.log('green-lantern', 'Constructing perimeter scan around 6 modified files...');
-    this.log('lois-lane', 'Reading code and architecture for documentation...');
-    await sleep(2500);
-    this.log('wonder-woman', '3 issues found (0 critical). Verdict: PASS');
-    this.artifact('review.json', 'wonder-woman');
-    this.complete('wonder-woman');
+    this.start('wonder-woman');
+    this.start('flash');
+    this.start('green-lantern');
+    this.start('lois-lane');
+    await sleep(1000);
+    this.tool('wonder-woman', 'Grep: scanning for code quality issues...');
+    this.tool('flash', 'Write tests/PetAvatar.test.tsx');
+    this.tool('green-lantern', 'Grep: scanning for OWASP patterns...');
+    this.tool('lois-lane', 'Read artifacts/architecture.md');
+    await sleep(2000);
+    this.stop('wonder-woman', '3 issues found (0 critical). Verdict: PASS');
     await sleep(500);
-    this.log('flash', '44 tests, 44 passed, 0 failed. Zero coverage gaps. Verdict: PASS');
-    this.artifact('test-results.json', 'flash');
-    this.complete('flash');
-    await sleep(800);
-    this.log('green-lantern', 'No critical or high findings. Threat model clear. Verdict: PASS');
-    this.artifact('security-review.json', 'green-lantern');
-    this.complete('green-lantern');
+    this.stop('flash', '44 tests, 44 passed. Verdict: PASS');
     await sleep(500);
-    this.log('lois-lane', 'Feature documentation written. API endpoint documented.');
-    this.complete('lois-lane');
+    this.stop('green-lantern', 'No critical findings. Verdict: PASS');
+    await sleep(300);
+    this.stop('lois-lane', 'Documentation written for new component');
     await sleep(500);
 
-    this.log('batman', 'All agents complete. Mission successful.');
-    this.complete('batman');
+    this.stop('batman', 'All agents complete. Mission successful.');
     this.done();
-    this.log('system', 'Factory run complete. All agents passed.');
   }
 };
 
 // Initialize
 loadHistory();
-setInterval(pollAPI, POLL_INTERVAL);
+setInterval(poll, POLL_INTERVAL);
