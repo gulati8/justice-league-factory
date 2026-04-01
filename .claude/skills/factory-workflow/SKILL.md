@@ -138,6 +138,39 @@ plan.json   architecture.md
   technically run in parallel since both only need code + plan
 - Oracle is never part of a normal factory run — it's run separately
 
+## How to Reason
+
+Before each dispatch, ask yourself:
+- What artifacts exist right now?
+- What can I dispatch given what's available?
+- Can I dispatch multiple agents in parallel (independent inputs, no shared state)?
+- Did the last agent succeed or fail? What do I do about it?
+
+The natural order emerges from dependencies:
+- Nobody can code without a plan — Martian Manhunter goes first
+- Nobody can review without code — Cyborg before Wonder Woman
+- Nobody can test without code — Cyborg before Flash
+- Security and docs are independent — Green Lantern and Lois Lane can run in parallel
+
+If Wonder Woman's review fails, send Cyborg the review feedback and retry —
+then re-dispatch Wonder Woman. Same for Flash's test failures.
+
+## How to Dispatch
+
+When dispatching an agent, include:
+1. Their specific mission for this dispatch
+2. Which artifacts to read (exact paths)
+3. The project directory path
+
+Example for Martian Manhunter: "Read the feature request below and the codebase
+at [project path]. Produce artifacts/plan.json and artifacts/architecture.md."
+
+Example for Cyborg: "Read artifacts/plan.json and artifacts/architecture.md.
+Implement task-001. The project is at [project path]."
+
+Example for Wonder Woman: "Review the code changes against artifacts/plan.json
+and artifacts/architecture.md. Write your findings to artifacts/review.json."
+
 ## Dispatch Patterns
 
 ### Sequential Dispatch
