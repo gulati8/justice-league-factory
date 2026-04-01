@@ -1,5 +1,5 @@
 // Justice League Factory — Log Viewer Dashboard
-// Polls /api/events for all hook events, displays chronologically.
+// Polls /api/events for all hook events, displays newest-first.
 // SubagentStop rows are clickable to view full transcripts.
 
 const POLL_INTERVAL = 2000;
@@ -10,7 +10,18 @@ const transcriptTitle = document.getElementById('transcript-title');
 const transcriptMeta = document.getElementById('transcript-meta');
 const transcriptContent = document.getElementById('transcript-content');
 
+// Pagination state
+let currentPage = 1;
+const pageSize = 50;
+let totalEvents = 0;
+
+// Polling state — track the highest id seen so far for incremental polling
 let lastEventId = 0;
+
+// Filter state
+let filterFrom = '';
+let filterTo = '';
+
 let agentStates = {};
 
 const AGENT_DISPLAY = {
@@ -231,27 +242,131 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') overlay.classList.add('hidden');
 });
 
-// Poll for new events
-async function poll() {
+// Build query string for /api/events with pagination and filter params
+function buildEventsUrl(page, from, to) {
+  const offset = (page - 1) * pageSize;
+  let url = '/api/events?limit=' + pageSize + '&offset=' + offset;
+  if (from) url += '&from=' + encodeURIComponent(from);
+  if (to) url += '&to=' + encodeURIComponent(to);
+  return url;
+}
+
+// Build query string for /api/events/count with optional filter params
+function buildCountUrl(from, to) {
+  let url = '/api/events/count';
+  const parts = [];
+  if (from) parts.push('from=' + encodeURIComponent(from));
+  if (to) parts.push('to=' + encodeURIComponent(to));
+  if (parts.length) url += '?' + parts.join('&');
+  return url;
+}
+
+// Fetch total event count and update pagination controls
+async function fetchTotalCount() {
   try {
-    const res = await fetch('/api/events?since=' + lastEventId);
+    const res = await fetch(buildCountUrl(filterFrom, filterTo));
+    if (!res.ok) return;
+    const data = await res.json();
+    totalEvents = data.count || 0;
+    updatePaginationControls();
+  } catch (e) {
+    // API not available
+  }
+}
+
+// Update the page indicator and Newer/Older button states
+function updatePaginationControls() {
+  const totalPages = Math.max(1, Math.ceil(totalEvents / pageSize));
+  document.getElementById('page-indicator').textContent =
+    'Page ' + currentPage + ' of ' + totalPages;
+  document.getElementById('btn-newer').disabled = currentPage <= 1;
+  document.getElementById('btn-older').disabled = currentPage >= totalPages;
+}
+
+// Clear log entries except the static system row at the bottom
+function clearLogEntries() {
+  // Remove all children, then re-append the system row at the bottom
+  while (logEntries.firstChild) {
+    logEntries.removeChild(logEntries.firstChild);
+  }
+  const systemRow = document.createElement('div');
+  systemRow.className = 'log-row system-row';
+  systemRow.innerHTML =
+    '<span class="log-ts">--:--:--</span>' +
+    '<span class="log-type">system</span>' +
+    '<span class="log-agent">--</span>' +
+    '<span class="log-detail">Justice League Factory initialized. Waiting for mission...</span>';
+  logEntries.appendChild(systemRow);
+}
+
+// Load one page of history (newest-first), prepending rows above the system row
+async function loadHistory() {
+  try {
+    await fetchTotalCount();
+
+    const res = await fetch(buildEventsUrl(currentPage, filterFrom, filterTo));
+    if (!res.ok) return;
+
+    const events = await res.json();
+
+    clearLogEntries();
+
+    if (events.length === 0) {
+      document.getElementById('log-viewer').scrollTop = 0;
+      return;
+    }
+
+    statusEl.className = 'status complete';
+    statusEl.textContent = 'HISTORY';
+
+    // Events arrive ORDER BY id DESC (newest first). Insert them in order
+    // so the top of the list is the newest event, system row stays at bottom.
+    const systemRow = logEntries.lastChild;
+    for (const event of events) {
+      processEvent(event);
+      logEntries.insertBefore(renderEvent(event), systemRow);
+      if (event.id > lastEventId) lastEventId = event.id;
+    }
+
+    // Scroll to top — newest events are at the top
+    document.getElementById('log-viewer').scrollTop = 0;
+  } catch (e) {
+    // No data yet
+  }
+}
+
+// Poll for new events (only active on page 1, prepend at top)
+async function poll() {
+  // Only poll for live events when on page 1
+  if (currentPage !== 1) return;
+
+  try {
+    // Use since= to fetch only events newer than what we've seen
+    let url = '/api/events?since=' + lastEventId;
+    if (filterFrom) url += '&from=' + encodeURIComponent(filterFrom);
+    if (filterTo) url += '&to=' + encodeURIComponent(filterTo);
+
+    const res = await fetch(url);
     if (!res.ok) return;
 
     const events = await res.json();
     if (events.length === 0) return;
 
     // Update status to running if we're getting events
-    if (statusEl.textContent === 'IDLE') {
+    if (statusEl.textContent === 'IDLE' || statusEl.textContent === 'HISTORY') {
       statusEl.className = 'status running';
       statusEl.textContent = 'RUNNING';
     }
 
     const viewer = document.getElementById('log-viewer');
-    const isScrolledToBottom = viewer.scrollHeight - viewer.scrollTop - viewer.clientHeight < 50;
+
+    // Events arrive DESC (newest first). Insert each before the fixed reference
+    // node so they accumulate in DESC order above existing rows.
+    const firstChild = logEntries.firstChild;
 
     for (const event of events) {
       processEvent(event);
-      logEntries.appendChild(renderEvent(event));
+      logEntries.insertBefore(renderEvent(event), firstChild);
       if (event.id > lastEventId) lastEventId = event.id;
 
       // If we see a Stop event, mark as complete
@@ -262,39 +377,49 @@ async function poll() {
       }
     }
 
-    // Auto-scroll if user was already at bottom
-    if (isScrolledToBottom) {
-      viewer.scrollTop = viewer.scrollHeight;
-    }
+    // Update count and pagination controls
+    totalEvents += events.length;
+    updatePaginationControls();
+
+    // Scroll to top so newest events are visible
+    viewer.scrollTop = 0;
   } catch (e) {
     // API not available yet
   }
 }
 
-// Load existing events on startup
-async function loadHistory() {
-  try {
-    const res = await fetch('/api/events?since=0&limit=1000');
-    if (!res.ok) return;
-
-    const events = await res.json();
-    if (events.length === 0) return;
-
-    statusEl.className = 'status complete';
-    statusEl.textContent = 'HISTORY';
-
-    for (const event of events) {
-      processEvent(event);
-      logEntries.appendChild(renderEvent(event));
-      if (event.id > lastEventId) lastEventId = event.id;
-    }
-
-    document.getElementById('log-viewer').scrollTop =
-      document.getElementById('log-viewer').scrollHeight;
-  } catch (e) {
-    // No data yet
+// Pagination button handlers
+document.getElementById('btn-newer').addEventListener('click', function() {
+  if (currentPage > 1) {
+    currentPage--;
+    loadHistory();
   }
-}
+});
+
+document.getElementById('btn-older').addEventListener('click', function() {
+  const totalPages = Math.max(1, Math.ceil(totalEvents / pageSize));
+  if (currentPage < totalPages) {
+    currentPage++;
+    loadHistory();
+  }
+});
+
+// Filter button handlers
+document.getElementById('btn-filter').addEventListener('click', function() {
+  filterFrom = document.getElementById('filter-from').value;
+  filterTo = document.getElementById('filter-to').value;
+  currentPage = 1;
+  loadHistory();
+});
+
+document.getElementById('btn-clear').addEventListener('click', function() {
+  document.getElementById('filter-from').value = '';
+  document.getElementById('filter-to').value = '';
+  filterFrom = '';
+  filterTo = '';
+  currentPage = 1;
+  loadHistory();
+});
 
 // Demo mode: scripted simulation (no API needed)
 window.simulate = {
@@ -308,9 +433,9 @@ window.simulate = {
       '<span class="log-type ' + type + '">' + type + '</span>' +
       '<span class="log-agent ' + (agent || '') + '">' + displayAgent + '</span>' +
       '<span class="log-detail">' + escapeHtml(detail) + '</span>';
-    logEntries.appendChild(row);
-    document.getElementById('log-viewer').scrollTop =
-      document.getElementById('log-viewer').scrollHeight;
+    // Prepend at top (newest-first)
+    logEntries.insertBefore(row, logEntries.firstChild);
+    document.getElementById('log-viewer').scrollTop = 0;
   },
 
   start: function(agent) { updateAgentChip(agent, 'active'); this._addRow('SubagentStart', agent, 'Agent dispatched'); },

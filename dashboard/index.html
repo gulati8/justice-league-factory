@@ -24,6 +24,21 @@
     <div class="agent-chip" data-agent="oracle"><span class="chip-icon">🔮</span><span class="chip-name">Oracle</span><span class="chip-status">--</span></div>
   </div>
 
+  <div class="pagination-toolbar">
+    <button id="btn-newer" disabled>&#8593; Newer</button>
+    <span id="page-indicator" class="page-indicator">Page 1 of 1</span>
+    <button id="btn-older" disabled>Older &#8595;</button>
+
+    <div class="toolbar-sep"></div>
+
+    <span class="filter-label">From</span>
+    <input id="filter-from" class="filter-input" type="datetime-local">
+    <span class="filter-label">To</span>
+    <input id="filter-to" class="filter-input" type="datetime-local">
+    <button id="btn-filter">Filter</button>
+    <button id="btn-clear">Clear</button>
+  </div>
+
   <main id="log-viewer">
     <div id="log-entries">
       <div class="log-row system-row">

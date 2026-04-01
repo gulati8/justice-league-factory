@@ -37,6 +37,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == '/api/events':
             self.serve_events(params)
+        elif path == '/api/events/count':
+            self.serve_events_count(params)
         elif path == '/api/runs':
             self.serve_runs()
         elif path == '/api/agents':
@@ -52,14 +54,59 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     def serve_events(self, params):
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
-        since = params.get('since', ['0'])[0]
-        limit = params.get('limit', ['200'])[0]
+
+        since = int(params.get('since', ['0'])[0])
+        limit = int(params.get('limit', ['200'])[0])
+        offset = int(params.get('offset', ['0'])[0])
+        from_ts = params.get('from', [None])[0]
+        to_ts = params.get('to', [None])[0]
+
+        # Build WHERE clause — since= and datetime filters compose together
+        conditions = ['id > ?']
+        args = [since]
+
+        if from_ts:
+            conditions.append('timestamp >= ?')
+            args.append(from_ts)
+        if to_ts:
+            conditions.append('timestamp <= ?')
+            args.append(to_ts)
+
+        where = ' AND '.join(conditions)
+        args += [limit, offset]
+
         rows = conn.execute(
-            'SELECT * FROM events WHERE id > ? ORDER BY id ASC LIMIT ?',
-            (int(since), int(limit))
+            'SELECT * FROM events WHERE ' + where + ' ORDER BY id DESC LIMIT ? OFFSET ?',
+            args
         ).fetchall()
         conn.close()
         self.json_response([dict(r) for r in rows])
+
+    def serve_events_count(self, params):
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+
+        from_ts = params.get('from', [None])[0]
+        to_ts = params.get('to', [None])[0]
+
+        conditions = []
+        args = []
+
+        if from_ts:
+            conditions.append('timestamp >= ?')
+            args.append(from_ts)
+        if to_ts:
+            conditions.append('timestamp <= ?')
+            args.append(to_ts)
+
+        where = ('WHERE ' + ' AND '.join(conditions)) if conditions else ''
+
+        row = conn.execute(
+            'SELECT COUNT(*) as count FROM events ' + where,
+            args
+        ).fetchone()
+        conn.close()
+        self.json_response({'count': row['count'] if row else 0})
 
     def serve_runs(self):
         conn = sqlite3.connect(DB_PATH)
