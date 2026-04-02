@@ -19,8 +19,10 @@ def get_db_path(project_dir: str) -> str:
     return os.path.join(project_dir, "eval", "factory.db")
 
 
-def get_schema_path(project_dir: str) -> str:
-    return os.path.join(project_dir, "eval", "init-db.sql")
+def get_schema_path() -> str:
+    """Schema lives in the factory repo, not the target project."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(script_dir, "..", "..", "eval", "init-db.sql")
 
 
 def init_db(db_path: str, schema_path: str) -> sqlite3.Connection:
@@ -190,7 +192,7 @@ def main() -> None:
         sys.exit(1)
 
     db_path = get_db_path(project_dir)
-    schema_path = get_schema_path(project_dir)
+    schema_path = get_schema_path()
 
     try:
         conn = init_db(db_path, schema_path)
