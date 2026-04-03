@@ -131,7 +131,7 @@ Your PR should be structured for easy human review:
 
 ## Improvement Schema
 
-Your output must conform to `schemas/improvement.schema.json`:
+Your output must conform to `.claude/schemas/improvement.schema.json`:
 
 ```json
 {

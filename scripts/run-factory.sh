@@ -17,9 +17,6 @@ echo "Factory: $FACTORY_DIR"
 
 FEATURE=$(cat "$FEATURE_REQUEST")
 
-# Ensure artifacts directory is ready
-mkdir -p "$FACTORY_DIR/artifacts/briefings"
-
 # Initialize telemetry DB
 sqlite3 "$FACTORY_DIR/eval/factory.db" < "$FACTORY_DIR/eval/init-db.sql" 2>/dev/null || true
 

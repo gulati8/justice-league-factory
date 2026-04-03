@@ -1,11 +1,11 @@
 # Artifact Contracts
 
-Every structured artifact follows a JSON schema in `schemas/`. Agents produce
+Every structured artifact follows a JSON schema in `.claude/schemas/`. Agents produce
 artifacts that downstream agents consume. This document summarizes the contracts.
 
 ## plan.json (Producer: Martian Manhunter)
 
-**Schema:** `schemas/plan.schema.json`
+**Schema:** `.claude/schemas/plan.schema.json`
 
 Top-level required fields: `feature`, `summary`, `architecture`, `tasks`
 
@@ -28,7 +28,7 @@ Each task in `tasks` array contains:
 
 ## review.json (Producer: Wonder Woman)
 
-**Schema:** `schemas/review.schema.json`
+**Schema:** `.claude/schemas/review.schema.json`
 
 Top-level required fields: `verdict`, `issues`, `summary`
 
@@ -47,7 +47,7 @@ Top-level required fields: `verdict`, `issues`, `summary`
 
 ## test-results.json (Producer: Flash)
 
-**Schema:** `schemas/test-results.schema.json`
+**Schema:** `.claude/schemas/test-results.schema.json`
 
 Top-level required fields: `verdict`, `summary`, `tests_written`, `test_run`
 
@@ -61,7 +61,7 @@ Top-level required fields: `verdict`, `summary`, `tests_written`, `test_run`
 
 ## security-review.json (Producer: Green Lantern)
 
-**Schema:** `schemas/security-review.schema.json`
+**Schema:** `.claude/schemas/security-review.schema.json`
 
 Top-level required fields: `verdict`, `summary`, `owasp_findings`, `stride_analysis`
 
@@ -75,7 +75,7 @@ Top-level required fields: `verdict`, `summary`, `owasp_findings`, `stride_analy
 
 ## improvements.json (Producer: Oracle)
 
-**Schema:** `schemas/improvement.schema.json`
+**Schema:** `.claude/schemas/improvement.schema.json`
 
 Top-level required fields: `run_count_analyzed`, `proposals`
 
@@ -106,5 +106,5 @@ Feature Request → plan.json + architecture.md
 ```
 
 All artifacts live in the factory's `artifacts/` directory. Schemas live in
-`schemas/`. The validation hook (`PostToolUse` on `Write`) automatically
+`.claude/schemas/`. The validation hook (`PostToolUse` on `Write`) automatically
 validates artifacts against their schemas when agents write them.

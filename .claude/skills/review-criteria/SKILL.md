@@ -81,7 +81,7 @@ Beyond plan compliance, evaluate:
 
 ## Review Schema Reference
 
-Your output must conform to `schemas/review.schema.json`:
+Your output must conform to `.claude/schemas/review.schema.json`:
 
 ```json
 {

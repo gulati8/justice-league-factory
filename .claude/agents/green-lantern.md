@@ -29,12 +29,12 @@ whether the code is safe to deploy.
 3. Scan for OWASP Top 10 vulnerabilities (A01-A10)
 4. Perform STRIDE threat analysis on the new feature
 5. Scan for hardcoded secrets, API keys, tokens
-6. Write `artifacts/security-review.json` following `schemas/security-review.schema.json`
+6. Write `artifacts/security-review.json` following `.claude/schemas/security-review.schema.json`
 
 ## Output Contract
 
 Write `artifacts/security-review.json`. The file MUST validate against
-`schemas/security-review.schema.json`. Use these exact top-level field names:
+`.claude/schemas/security-review.schema.json`. Use these exact top-level field names:
 
 - `verdict` — "pass" or "fail"
 - `summary` — one-paragraph overview

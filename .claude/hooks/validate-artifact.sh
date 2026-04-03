@@ -33,7 +33,7 @@ esac
 
 # Resolve the project directory
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-SCHEMA_PATH="$PROJECT_DIR/schemas/$SCHEMA"
+SCHEMA_PATH="$PROJECT_DIR/.claude/schemas/$SCHEMA"
 
 # If the schema file doesn't exist, allow the write (graceful degradation)
 if [ ! -f "$SCHEMA_PATH" ]; then

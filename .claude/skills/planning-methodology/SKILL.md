@@ -91,7 +91,7 @@ work without asking questions. Include:
 
 ## Plan Schema Reference
 
-Your output must conform to `schemas/plan.schema.json`. Key fields:
+Your output must conform to `.claude/schemas/plan.schema.json`. Key fields:
 
 ```json
 {

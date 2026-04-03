@@ -103,7 +103,7 @@ Common un-testable criteria:
 
 ## Test Results Schema
 
-Your output must conform to `schemas/test-results.schema.json`:
+Your output must conform to `.claude/schemas/test-results.schema.json`:
 
 ```json
 {

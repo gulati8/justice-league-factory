@@ -26,7 +26,7 @@ The factory uses Claude Code's native primitives:
 - **Agents** (`.claude/agents/*.md`) — Specialized AI agents with scoped tools, models, and skills. Tool restrictions are system constraints, not prompt instructions.
 - **Skills** (`.claude/skills/*/SKILL.md`) — Reusable methodology injected into agent context. Customize to match your team's standards.
 - **Hooks** (`.claude/settings.json`) — Deterministic artifact validation and telemetry logging. Not probabilistic — guaranteed to fire.
-- **Schemas** (`schemas/*.json`) — Structured contracts between agents.
+- **Schemas** (`.claude/schemas/*.json`) — Structured contracts between agents.
 
 Batman (orchestrator) dispatches specialized agents who communicate through structured artifacts. The LLM drives the loop — Batman reasons about what to dispatch based on artifact state, not a hardcoded pipeline.
 
@@ -55,6 +55,20 @@ Batman (orchestrator) dispatches specialized agents who communicate through stru
 # Launch the observability dashboard
 ./scripts/serve-dashboard.sh
 ```
+
+## Connecting to a Project
+
+```bash
+# Symlink the factory's .claude/ directory into your project
+ln -s /path/to/justice-league-factory/.claude /path/to/your-project/.claude
+
+# Then run batman from your project
+cd /path/to/your-project
+claude --agent batman
+```
+
+The `artifacts/` directory is auto-created by the factory's hooks on the first
+agent write. Add `artifacts/` to your project's `.gitignore`.
 
 ## Customization
 

@@ -30,7 +30,7 @@ and review the feature.
 3. Design the architecture: what files to create, modify, what interfaces exist
 4. Decompose into tasks with clear acceptance criteria
 5. Identify which tasks can run in parallel (same `parallel_group`)
-6. Write `artifacts/plan.json` following `schemas/plan.schema.json`
+6. Write `artifacts/plan.json` following `.claude/schemas/plan.schema.json`
 7. Write `artifacts/architecture.md` with the technical design narrative
 
 ## Output Contract

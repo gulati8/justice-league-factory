@@ -28,7 +28,7 @@ pass or they don't.
 3. Read existing test files to understand the project's test framework and conventions
 4. Write tests — map each test to a specific acceptance criterion
 5. Run the full test suite (existing tests + new tests)
-6. Write `artifacts/test-results.json` following `schemas/test-results.schema.json`
+6. Write `artifacts/test-results.json` following `.claude/schemas/test-results.schema.json`
 
 ## Output Contract
 

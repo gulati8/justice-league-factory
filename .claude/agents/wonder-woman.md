@@ -29,7 +29,7 @@ verdict determines whether the code proceeds to testing or gets sent back.
 3. Read Cyborg briefings in `artifacts/briefings/cyborg-*.json`
 4. Read the actual code changes
 5. Evaluate: acceptance criteria met? Architecture followed? Bugs? Patterns?
-6. Write `artifacts/review.json` following `schemas/review.schema.json`
+6. Write `artifacts/review.json` following `.claude/schemas/review.schema.json`
 
 ## Output Contract
 

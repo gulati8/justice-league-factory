@@ -13,7 +13,7 @@ software changes — then improve themselves over time.
   context. Customize these to match your team's standards.
 - **Hooks** (`.claude/settings.json`) — Deterministic guarantees: artifact
   validation against JSON schemas, telemetry logging to SQLite.
-- **Schemas** (`schemas/`) — Structured contracts between agents.
+- **Schemas** (`.claude/schemas/`) — Structured contracts between agents.
 - **Telemetry** (`eval/factory.db`) — SQLite database with per-agent metrics
   and transcripts. Oracle queries this to propose improvements.
 
