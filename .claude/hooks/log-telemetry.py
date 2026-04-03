@@ -15,8 +15,10 @@ import sys
 from datetime import datetime, timezone
 
 
-def get_db_path(project_dir: str) -> str:
-    return os.path.join(project_dir, "eval", "factory.db")
+def get_db_path() -> str:
+    """Database lives in the factory repo, not the target project."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(script_dir, "..", "..", "eval", "factory.db")
 
 
 def get_schema_path() -> str:
@@ -191,7 +193,7 @@ def main() -> None:
         print(f"Failed to parse event JSON: {e}", file=sys.stderr)
         sys.exit(1)
 
-    db_path = get_db_path(project_dir)
+    db_path = get_db_path()
     schema_path = get_schema_path()
 
     try:
