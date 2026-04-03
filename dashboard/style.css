@@ -65,11 +65,15 @@ header h1 {
   font-size: 0.875rem;
   white-space: nowrap;
   transition: border-color 0.3s, background 0.3s;
+  cursor: pointer;
+  user-select: none;
 }
 
 .agent-chip.active { border-color: #7c3aed; background: #2e1065; }
 .agent-chip.done { border-color: #059669; }
 .agent-chip.error { border-color: #dc2626; }
+.agent-chip.selected { border-color: #a78bfa; background: #3b1f6e; box-shadow: 0 0 0 1px #a78bfa; }
+.agent-chip.selected .chip-name { color: #e2e8f0; }
 
 .chip-icon { font-size: 1.125rem; }
 .chip-name { font-weight: 700; color: #cbd5e1; font-size: inherit; }

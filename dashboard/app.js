@@ -21,6 +21,7 @@ let lastEventId = 0;
 // Filter state
 let filterFrom = '';
 let filterTo = '';
+let filterAgents = [];
 
 let agentStates = {};
 
@@ -248,6 +249,7 @@ function buildEventsUrl(page, from, to) {
   let url = '/api/events?limit=' + pageSize + '&offset=' + offset;
   if (from) url += '&from=' + encodeURIComponent(from);
   if (to) url += '&to=' + encodeURIComponent(to);
+  filterAgents.forEach(function(a) { url += '&agent=' + encodeURIComponent(a); });
   return url;
 }
 
@@ -257,6 +259,7 @@ function buildCountUrl(from, to) {
   const parts = [];
   if (from) parts.push('from=' + encodeURIComponent(from));
   if (to) parts.push('to=' + encodeURIComponent(to));
+  filterAgents.forEach(function(a) { parts.push('agent=' + encodeURIComponent(a)); });
   if (parts.length) url += '?' + parts.join('&');
   return url;
 }
@@ -345,6 +348,7 @@ async function poll() {
     let url = '/api/events?since=' + lastEventId;
     if (filterFrom) url += '&from=' + encodeURIComponent(filterFrom);
     if (filterTo) url += '&to=' + encodeURIComponent(filterTo);
+    filterAgents.forEach(function(a) { url += '&agent=' + encodeURIComponent(a); });
 
     const res = await fetch(url);
     if (!res.ok) return;
@@ -493,6 +497,24 @@ window.simulate = {
     this.done();
   }
 };
+
+// Agent chip click handlers — toggle agent in/out of filterAgents
+document.querySelectorAll('.agent-chip').forEach(function(chip) {
+  chip.addEventListener('click', function() {
+    const agent = chip.dataset.agent;
+    if (!agent) return;
+    const idx = filterAgents.indexOf(agent);
+    if (idx === -1) {
+      filterAgents.push(agent);
+      chip.classList.add('selected');
+    } else {
+      filterAgents.splice(idx, 1);
+      chip.classList.remove('selected');
+    }
+    currentPage = 1;
+    loadHistory();
+  });
+});
 
 // Initialize
 loadHistory();

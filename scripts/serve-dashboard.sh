@@ -60,8 +60,9 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         offset = int(params.get('offset', ['0'])[0])
         from_ts = params.get('from', [None])[0]
         to_ts = params.get('to', [None])[0]
+        agents = params.get('agent', [])
 
-        # Build WHERE clause — since= and datetime filters compose together
+        # Build WHERE clause — since=, datetime, and agent filters compose together
         conditions = ['id > ?']
         args = [since]
 
@@ -71,6 +72,10 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         if to_ts:
             conditions.append('timestamp <= ?')
             args.append(to_ts)
+        if agents:
+            placeholders = ', '.join(['?' for _ in agents])
+            conditions.append('agent_type IN (' + placeholders + ')')
+            args.extend(agents)
 
         where = ' AND '.join(conditions)
         args += [limit, offset]
@@ -88,6 +93,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
         from_ts = params.get('from', [None])[0]
         to_ts = params.get('to', [None])[0]
+        agents = params.get('agent', [])
 
         conditions = []
         args = []
@@ -98,6 +104,10 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         if to_ts:
             conditions.append('timestamp <= ?')
             args.append(to_ts)
+        if agents:
+            placeholders = ', '.join(['?' for _ in agents])
+            conditions.append('agent_type IN (' + placeholders + ')')
+            args.extend(agents)
 
         where = ('WHERE ' + ' AND '.join(conditions)) if conditions else ''
 
