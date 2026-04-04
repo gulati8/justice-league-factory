@@ -2,47 +2,58 @@
 name: database-patterns
 description: >
   Database migration and schema change standards for the FureverCare project.
-  Enforces proper migration-based schema evolution, prevents SQL aliasing hacks,
-  and codifies the project's existing migration conventions. Injected into
-  Martian Manhunter and Cyborg contexts.
+  Activate this skill whenever a task involves schema changes, column renames,
+  field additions, table creation, data backfills, index creation, or any
+  modification to how data is stored or named in the database. Also activate
+  when reviewing SQL queries that use aliases, or when backend TypeScript
+  interfaces need to reflect a new database shape.
 user-invocable: false
 disable-model-invocation: true
 ---
 
 # Database Patterns
 
-This guides how you handle any database schema change in the FureverCare project.
-The project uses PostgreSQL with raw SQL (no ORM), standalone migration scripts
-in `backend/src/db/`, Zod for request validation, and TypeScript interfaces for
-data types. Every schema change MUST follow the patterns below.
+This guides how you handle any database schema change in the FureverCare
+project. The project uses PostgreSQL with raw SQL (no ORM), standalone migration
+scripts in `backend/src/db/`, Zod for request validation, and TypeScript
+interfaces for data types.
 
-## The Cardinal Rule
+## Why Migrations — Not Aliases — Are the Only Correct Path
 
-**Schema changes MUST be database migrations. NEVER use SQL aliases, column
-mappings, or application-layer field renaming to avoid changing the actual
-database schema.**
+When a field needs to be renamed or added, the tempting shortcut is to handle it
+in the application layer: alias the column in SQL, map the name in the API, or
+translate it in the frontend. This feels fast, but it creates a split reality.
+The database column still has the old name. Every developer reading the code,
+every index, every backup, every query debugged under production load — all of
+them reference a name that doesn't match what the application calls it. The
+mismatch compounds over time: new developers learn the wrong mental model, future
+migrations have to work around the alias, and debugging becomes archaeology.
 
-Bad (what was done with `special_instructions`):
+The correct approach is to rename the column in the database and update every
+reference in one coordinated change. The stack then speaks a single language at
+every layer.
+
+Here is the pattern that was done wrong with `special_instructions`, and how it
+should have been done:
+
 ```sql
--- NEVER DO THIS: aliasing a column to avoid a migration
+-- Wrong: aliasing a column to avoid a migration
 SELECT special_instructions AS owners_notes FROM pets
 ```
-This creates hidden tech debt. The DB column still has the old name. Every
-developer who reads the code is confused. Queries, indexes, and backups all
-reference a name that no longer matches the application's vocabulary.
 
-Good:
 ```sql
--- A proper migration that renames the column
+-- Right: a migration that renames the column so the DB matches the application
 ALTER TABLE pets RENAME COLUMN special_instructions TO owners_notes;
 ```
-Then update every reference in the codebase: TypeScript interfaces, Zod schemas,
-SQL queries, API request/response shapes, and frontend types.
+
+After the migration, every TypeScript interface, Zod schema, SQL query, API
+shape, and frontend component is updated to use `owners_notes`. The old name
+disappears from the codebase entirely.
 
 ## Migration File Conventions
 
-The project has an established pattern. Every migration follows this structure
-exactly.
+Every migration follows a consistent structure so that any developer can read,
+run, or roll back a migration without surprises.
 
 ### File Naming
 
@@ -52,11 +63,11 @@ backend/src/db/migrate-{descriptive-slug}.ts
 
 The slug describes what the migration does in kebab-case. Real examples from the
 codebase:
-- `migrate-weight-units.ts` -- adds `weight_unit` column to pets
-- `migrate-sex-fixed.ts` -- adds `is_fixed` column, migrates existing data
-- `migrate-share-tokens.ts` -- creates the `share_tokens` table
-- `migrate-soft-delete.ts` -- adds `deleted_at` columns to document tables
-- `migrate-allergy-show-on-card.ts` -- adds `show_on_card` to allergies + backfill
+- `migrate-weight-units.ts` — adds `weight_unit` column to pets
+- `migrate-sex-fixed.ts` — adds `is_fixed` column, migrates existing data
+- `migrate-share-tokens.ts` — creates the `share_tokens` table
+- `migrate-soft-delete.ts` — adds `deleted_at` columns to document tables
+- `migrate-allergy-show-on-card.ts` — adds `show_on_card` to allergies + backfill
 
 ### File Structure
 
@@ -86,16 +97,17 @@ async function migrate() {
 migrate();
 ```
 
-Key rules:
-- Import `pool` from `./pool.js` (note the `.js` extension -- this is ESM)
+Key details:
+- Import `pool` from `./pool.js` (note the `.js` extension — this is ESM)
 - SQL goes in a template literal assigned to `const migration`
-- The `migrate()` function logs before and after, catches errors, and ALWAYS
-  calls `pool.end()` in the `finally` block
+- The `migrate()` function logs before and after, catches errors, and always
+  calls `pool.end()` in the `finally` block so the process exits cleanly
 - The function is called immediately at module scope
 
 ### npm Script Registration
 
-Every migration MUST have two npm script entries in `backend/package.json`:
+Every migration needs two npm script entries in `backend/package.json` so other
+developers can run it without reading the source:
 
 ```json
 {
@@ -111,20 +123,22 @@ The production variant runs compiled JS from `dist/`.
 
 ### Adding a Column
 
-Use `ADD COLUMN IF NOT EXISTS` for idempotency. Always include a `DEFAULT` value
-or allow `NULL`.
+Use `ADD COLUMN IF NOT EXISTS` so the migration is safe to re-run. Always
+include a `DEFAULT` value or allow `NULL` — otherwise the statement will fail on
+tables with existing rows.
 
 ```sql
 ALTER TABLE pets ADD COLUMN IF NOT EXISTS weight_unit VARCHAR(3) DEFAULT 'kg';
 ```
 
-Real example from `migrate-weight-units.ts`: adds `weight_unit` with a default
-so existing rows get a value.
+Real example from `migrate-weight-units.ts`: the default ensures existing rows
+get a sensible value without a separate backfill step.
 
 ### Adding a Column with Data Backfill
 
-When the new column's default isn't sufficient and existing data needs updating,
-combine the ALTER and UPDATE in the same migration.
+When the column's default isn't sufficient and existing data needs updating,
+combine the `ALTER` and `UPDATE` in the same migration so they succeed or fail
+as a unit.
 
 Real example from `migrate-allergy-show-on-card.ts`:
 ```sql
@@ -135,7 +149,9 @@ UPDATE pet_allergies SET show_on_card = true
 
 ### Adding a New Table
 
-Use `CREATE TABLE IF NOT EXISTS` for idempotency. Always include indexes.
+Use `CREATE TABLE IF NOT EXISTS` for idempotency. Always include indexes on
+foreign keys and any column used in frequent lookups — the query planner needs
+them.
 
 Real example from `migrate-share-tokens.ts`:
 ```sql
@@ -151,23 +167,15 @@ CREATE INDEX IF NOT EXISTS idx_share_tokens_pet_id ON share_tokens(pet_id);
 
 ### Renaming a Column
 
-This is the operation that was done WRONG with `special_instructions`. Here is
-how to do it correctly:
+This is the operation that was done wrong with `special_instructions`. The
+migration SQL itself is simple:
 
-1. Write a migration that uses `ALTER TABLE ... RENAME COLUMN`
-2. Update the TypeScript interface in the model file (`backend/src/models/*.ts`)
-3. Update every SQL query that references the old column name
-4. Update the Zod validation schema in the route file (`backend/src/routes/*.ts`)
-5. Update the frontend API client types (`frontend/src/api/client.ts`)
-6. Update every frontend component that references the old field name
-
-The migration SQL:
 ```sql
 ALTER TABLE pets RENAME COLUMN special_instructions TO owners_notes;
 ```
 
-NEVER use `DO $$ BEGIN ... IF NOT EXISTS` guard for renames -- `RENAME COLUMN`
-is not idempotent. If you need idempotency, check for the column name first:
+`RENAME COLUMN` is not idempotent. If there's any chance the migration might be
+run twice (e.g., against different environments), add an existence check:
 
 ```sql
 DO $$
@@ -181,10 +189,14 @@ BEGIN
 END $$;
 ```
 
+After the migration, every layer of the stack must be updated (see the
+full-stack checklist below). Leaving any layer behind defeats the purpose of the
+migration.
+
 ### Transforming Existing Data
 
 When a column's semantics change (not just its name), wrap the logic in a
-`DO $$ ... END $$` block.
+`DO $$ ... END $$` block so the add and the transform are atomic.
 
 Real example from `migrate-sex-fixed.ts`:
 ```sql
@@ -202,33 +214,70 @@ BEGIN
 END $$;
 ```
 
-This migration both adds a new column AND transforms existing data in a single
+This migration adds a new column and transforms existing data in a single
 atomic operation.
 
 ## Full-Stack Checklist for Schema Changes
 
-When Martian Manhunter plans a schema change, the plan MUST include tasks
-covering ALL of these layers. When Cyborg implements, verify each one:
+A schema change that touches the database but not the application is broken, and
+vice versa. Each layer below has a job, and skipping any one creates the kind of
+name mismatch this skill exists to prevent.
 
-1. **Migration file** -- `backend/src/db/migrate-<slug>.ts`
-2. **npm scripts** -- both `db:migrate:<slug>` and `db:migrate:<slug>:dev`
-3. **TypeScript model interface** -- `backend/src/models/<entity>.ts` (the `interface` and `CreateInput`)
-4. **SQL queries in model** -- every `SELECT`, `INSERT`, `UPDATE` that references the old name
-5. **Zod validation schema** -- `backend/src/routes/<entity>.ts` (the `z.object({...})`)
-6. **Allowed fields list** -- the `allowedFields` array in update functions
-7. **Seed data** -- `backend/src/db/seed.ts` if the field is seeded
-8. **Frontend API types** -- `frontend/src/api/client.ts`
-9. **Frontend components** -- every component that reads or writes the field
+1. **Migration file** — `backend/src/db/migrate-<slug>.ts`
+   The authoritative change. Everything else derives from it.
 
-Missing any layer creates a mismatch between what the database calls the field
-and what the application calls it -- which is exactly the kind of hidden debt
-this skill exists to prevent.
+2. **npm scripts** — both `db:migrate:<slug>` and `db:migrate:<slug>:dev`
+   Without these, other developers can't run the migration without reading source.
 
-## What NOT to Do
+3. **TypeScript model interface** — `backend/src/models/<entity>.ts`
+   The `interface` and `CreateInput` type must reflect the new shape. TypeScript
+   will catch downstream consumers that aren't updated.
 
-- NEVER use `SELECT old_name AS new_name` to rename a field at the query level
-- NEVER add translation/mapping logic in the API layer to bridge old DB names to new API names
-- NEVER leave the database column with an old name while the rest of the stack uses a new name
-- NEVER write a migration that deletes data without a corresponding backfill or archive step
-- NEVER add a column without considering what happens to existing rows (default value or backfill)
-- NEVER skip the npm script registration -- other developers need to run the migration
+4. **SQL queries in model** — every `SELECT`, `INSERT`, `UPDATE` that references
+   the old column name. A query using the old name will fail at runtime.
+
+5. **Zod validation schema** — `backend/src/routes/<entity>.ts`
+   The `z.object({...})` validates incoming request bodies. If it doesn't match
+   the new field name, valid requests will be rejected or invalid ones accepted.
+
+6. **Allowed fields list** — the `allowedFields` array in update functions.
+   This guards against mass-assignment vulnerabilities. A renamed field not
+   updated here will silently fail to update.
+
+7. **Seed data** — `backend/src/db/seed.ts` if the field is seeded.
+   Seeding with an old column name will fail on a fresh database setup.
+
+8. **Frontend API types** — `frontend/src/api/client.ts`
+   All TypeScript types for API data live here. Updating the backend without
+   updating these types breaks the TypeScript contract at the boundary.
+
+9. **Frontend components** — every component that reads or writes the field.
+   Components referencing the old field name will either show undefined or fail
+   to send the correct payload to the API.
+
+10. **E2E tests** — page objects, fixture data, and test specs that reference
+    the old field name. Playwright page objects in `frontend/e2e/pages/` often
+    have typed properties and locators that use the column name. Fixture data in
+    test specs uses the field name directly. Missing these means tests fail on
+    the next CI run.
+
+11. **Base schema DDL** — `backend/src/db/migrate.ts` contains the
+    `CREATE TABLE` statements used for fresh installs. If the base schema still
+    references the old column name, a fresh database setup (new developer, new
+    environment) will create the old column, and then the rename migration will
+    either fail or be a no-op depending on order.
+
+## Rollback Strategy
+
+Every rename migration should have a documented reverse operation. For column
+renames, the rollback is the inverse `RENAME COLUMN`:
+
+```sql
+-- Rollback: reverse the breed_or_mix rename
+ALTER TABLE pets RENAME COLUMN breed_or_mix TO breed;
+```
+
+Include this as a comment in the migration file or in the plan document. For
+destructive migrations (dropping columns, transforming data), the rollback is
+more complex and may require a backup-and-restore step — document that
+explicitly in the plan.

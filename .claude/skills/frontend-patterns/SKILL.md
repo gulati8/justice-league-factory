@@ -2,9 +2,11 @@
 name: frontend-patterns
 description: >
   Frontend styling, component structure, and UI consistency standards for the
-  FureverCare project. Enforces Tailwind-first styling, component layer classes,
-  and established file organization patterns. Injected into Martian Manhunter
-  and Cyborg contexts.
+  FureverCare project. Activate this skill whenever a task involves UI
+  components, buttons, modals, forms, tabs, badges, inputs, color choices,
+  Tailwind classes, inline styles, component organization, shared components,
+  API types, or any frontend code change. Also activate when a new field is
+  added to a backend model and the frontend needs to consume it.
 user-invocable: false
 disable-model-invocation: true
 ---
@@ -13,22 +15,29 @@ disable-model-invocation: true
 
 This guides how you write frontend code in the FureverCare project. The project
 uses React 18, Vite, React Router 6, and Tailwind CSS 3 with a custom theme.
-There is no component library -- all components are custom. The design system
-is defined through Tailwind config tokens and component layer classes in
+There is no component library — all components are custom. The design system is
+defined through Tailwind config tokens and component layer classes in
 `frontend/src/index.css`.
 
 ## The Styling Hierarchy
 
-There are three layers of styling in this project. Use them in this priority
-order:
+There are three layers of styling in this project. Understanding why each layer
+exists makes it clear which one to use.
 
-### 1. Component Layer Classes (ALWAYS prefer these)
+### 1. Component Layer Classes
 
 The project defines reusable classes in `@layer components` in `index.css`.
-These are the canonical patterns. ALWAYS use them when they exist.
+These classes encode the design decisions that apply consistently across the
+entire application: what a button looks like, what an input looks like, what a
+card looks like. When you use them, every instance of that element stays in sync
+automatically. When the designer changes the primary button style, one edit in
+`index.css` updates every button everywhere.
 
-**Buttons:** ALWAYS use the component classes. NEVER construct buttons from raw
-Tailwind utilities.
+Reach for these classes first, every time they exist.
+
+**Buttons:** The component classes handle all button variants. Building a button
+from raw Tailwind utilities instead creates a one-off that won't track design
+changes and won't look consistent with the rest of the app.
 
 | Class | Use For |
 |-------|---------|
@@ -40,22 +49,22 @@ Tailwind utilities.
 | `.btn-ghost` | Minimal chrome actions |
 | `.btn-sm` | Add to any button class for small variant |
 
-Good:
 ```tsx
+// Right
 <button className="btn-primary">Save Changes</button>
 <button className="btn-secondary btn-sm">Cancel</button>
 <button className="btn-danger">Delete Pet</button>
 ```
 
-Bad -- NEVER do this:
 ```tsx
-<!-- WRONG: rebuilding button styles from utilities -->
+// Wrong: rebuilding button styles from raw utilities
 <button className="bg-navy text-white px-6 py-3 rounded-lg font-semibold">Save</button>
 <button className="bg-[#1B2A4A] text-white px-4 py-2 rounded">Submit</button>
 ```
 
-**Inputs:** ALWAYS use `.input` for text inputs, textareas, and selects.
-ALWAYS use `.label` for form labels.
+**Inputs:** Use `.input` for text inputs, textareas, and selects. Use `.label`
+for form labels. These classes ensure consistent focus rings, border styles, and
+spacing across all forms.
 
 ```tsx
 <label className="label">Pet Name</label>
@@ -64,21 +73,34 @@ ALWAYS use `.label` for form labels.
 <textarea className="input" rows={3} />
 ```
 
-**Other component classes available:**
-- `.card` -- white background card with border and hover shadow
-- `.badge`, `.badge-danger`, `.badge-warning`, `.badge-success`, `.badge-info`, `.badge-navy` -- status badges
-- `.status-dot`, `.status-dot-success`, etc. -- inline status indicators
-- `.breadcrumb` -- breadcrumb navigation
-- `.data-table` -- table styling
-- `.error-text` -- form error messages
+**Date inputs:** The project has a `FlexibleDateInput` component
+(`components/FlexibleDateInput.tsx`) that handles date entry with precision
+tracking (day, month, year). When a form includes a date field, use
+`FlexibleDateInput` instead of a raw `<input type="date">`. This component
+pairs a date value with a `date_precision` field so the app can display "March
+2025" vs "March 15, 2025" appropriately. Use `formatFlexibleDate()` from the
+same module when displaying dates.
 
-### 2. Tailwind Theme Utilities (for layout and one-off styling)
+**Other available component classes:**
+- `.card` — white background card with border and hover shadow
+- `.badge`, `.badge-danger`, `.badge-warning`, `.badge-success`, `.badge-info`, `.badge-navy` — status badges
+- `.status-dot`, `.status-dot-success`, etc. — inline status indicators
+- `.breadcrumb` — breadcrumb navigation
+- `.data-table` — table styling
+- `.error-text` — form error messages
+
+### 2. Tailwind Theme Utilities
 
 For spacing, layout, typography sizing, and responsive design, use standard
-Tailwind utilities. For COLORS, ALWAYS use the project's Tailwind theme tokens.
+Tailwind utilities. For colors, use the project's Tailwind theme tokens.
 
-The theme is defined in `frontend/tailwind.config.js` and maps to the project's
-design tokens:
+The theme tokens exist so that a color change in one place updates everywhere.
+If you use `text-gray-600` instead of `text-surface-600`, that element won't
+respond to a theme update and will silently drift out of sync with the rest of
+the design. The same applies to using default Tailwind reds and greens instead
+of the semantic `danger`, `success`, and `info` tokens.
+
+The theme is defined in `frontend/tailwind.config.js`:
 
 | Token | Tailwind Class | Use For |
 |-------|---------------|---------|
@@ -94,68 +116,62 @@ design tokens:
 | Info | `text-info`, `bg-info-light` | Informational |
 | Surface 100-700 | `text-surface-500`, `bg-surface-100` | Grays, backgrounds, borders |
 
-Good:
 ```tsx
+// Right
 <p className="text-surface-600 text-sm">Secondary text</p>
 <div className="bg-danger-light border border-danger rounded-lg p-4">Error message</div>
 <span className="text-navy font-semibold">Important label</span>
 ```
 
-Bad -- NEVER do any of these:
 ```tsx
-<!-- WRONG: using default Tailwind grays instead of theme surface tokens -->
+// Wrong: default Tailwind palette instead of theme tokens
 <p className="text-gray-600">Secondary text</p>
-<p className="text-gray-400">Placeholder text</p>
-<div className="bg-gray-50 border-gray-200">...</div>
-
-<!-- WRONG: using default Tailwind red/green instead of theme semantic colors -->
 <span className="text-red-600">Error</span>
-<span className="text-green-500">Success</span>
 <div className="bg-red-50 border border-red-200 text-red-600">Error box</div>
 ```
 
-The correct replacements:
-- `text-gray-400` -> `text-surface-400`
-- `text-gray-500` -> `text-surface-500`
-- `text-gray-600` -> `text-surface-600`
-- `text-gray-900` -> `text-navy`
-- `bg-gray-50` -> `bg-surface` or `bg-surface-100`
-- `border-gray-200` -> `border-surface-200`
-- `text-red-600` -> `text-danger`
-- `bg-red-50` / `bg-red-100` -> `bg-danger-light`
-- `text-red-700` -> `text-danger`
-- `text-green-500` -> `text-success`
-- `text-blue-400` / `hover:border-blue-400` -> `text-steel` / `hover:border-steel`
+Quick reference for the most common substitutions:
+- `text-gray-400` → `text-surface-400`
+- `text-gray-500` → `text-surface-500`
+- `text-gray-600` → `text-surface-600`
+- `text-gray-900` → `text-navy`
+- `bg-gray-50` → `bg-surface` or `bg-surface-100`
+- `border-gray-200` → `border-surface-200`
+- `text-red-600` / `text-red-700` → `text-danger`
+- `bg-red-50` / `bg-red-100` → `bg-danger-light`
+- `text-green-500` → `text-success`
+- `text-blue-400` / `hover:border-blue-400` → `text-steel` / `hover:border-steel`
 
-**NOTE:** The existing codebase has many violations of this rule (e.g.,
-`text-gray-500`, `text-red-600`, `bg-red-100` in tab components). Do NOT
-propagate these mistakes. New code MUST use the theme tokens. When modifying
-an existing file, convert any color classes you touch to theme tokens but do
-NOT refactor the entire file -- stay within your task scope.
+The existing codebase has violations of this rule (e.g., `text-gray-500`,
+`text-red-600`, `bg-red-100` in tab components). Don't propagate these mistakes.
+New code should use theme tokens. When modifying an existing file, convert color
+classes you touch to theme tokens, but don't refactor the entire file — stay
+within your task scope.
 
-### 3. Inline Styles and CSS Variables (LAST resort)
+### 3. Inline Styles (Last Resort)
 
-NEVER use `style={{}}` with raw CSS variable references or hardcoded values
-in new code. This is the worst pattern in the codebase and MUST NOT be
-replicated.
+Inline `style={{}}` with CSS variable references or hardcoded values is the
+worst pattern in the codebase because it escapes the design system entirely. The
+theme can't update it, TypeScript can't type-check it, and Tailwind's purging
+can't reason about it.
 
-Bad -- actual examples from the codebase (do NOT copy these):
+Bad examples that exist in the codebase — do not copy these:
 ```tsx
-<!-- WRONG: inline style with CSS variables -->
+// Wrong: inline style with CSS variables
 <h2 style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-navy)' }}>
-<!-- WRONG: hardcoded rgba -->
+// Wrong: hardcoded rgba
 <div style={{ background: 'rgba(27,42,74,0.5)' }}>
-<!-- WRONG: hardcoded hex in SVG -->
+// Wrong: hardcoded hex in SVG
 <rect fill="#1B2A4A"/>
 <circle fill="#4A7FB5"/>
 ```
 
-These patterns exist in `AuthModal.tsx`, `EmergencyCard.tsx`,
-`OverviewSection.tsx`, and `Footer.tsx`. They are tech debt. Do not add more.
+These appear in `AuthModal.tsx`, `EmergencyCard.tsx`, `OverviewSection.tsx`, and
+`Footer.tsx`. They are tech debt. Don't add more.
 
-The ONLY acceptable use of inline `style` is for truly dynamic values computed
-at runtime (e.g., a width based on a percentage calculation). Even then, prefer
-Tailwind's arbitrary value syntax: `w-[${percent}%]`.
+The only acceptable use of inline `style` is for values that must be computed at
+runtime (e.g., a width based on a percentage). Even then, prefer Tailwind's
+arbitrary value syntax: `w-[${percent}%]`.
 
 ## Component Organization
 
@@ -202,15 +218,13 @@ frontend/src/
 
 ### When to Create a Shared Component
 
-A component belongs in `components/` if it is used by two or more pages OR if
-it represents a generic UI pattern (modal, form input, avatar).
+If a UI pattern is used in two or more places, or represents a generic primitive
+(modal, form input, avatar), it belongs in `components/`. If it's specific to
+one page feature, it belongs in `pages/<page>/`.
 
-A component belongs in `pages/<page>/` if it is only used within that page
-feature.
-
-**NEVER duplicate UI logic.** If you find yourself copying JSX from one tab
-to use in another, extract it to a shared component. The project already does
-this well with `InlineEditForm` and `SourceDocumentLink`.
+Duplicating JSX across tabs is a maintenance trap: when the design changes, every
+copy has to be found and updated. The project already handles this well with
+`InlineEditForm` and `SourceDocumentLink` — follow that lead.
 
 ### Modal Pattern
 
@@ -245,12 +259,12 @@ Every modal in the project follows this structure:
 
 Real examples: `AddPetModal.tsx`, `ShareModal.tsx`, `CardAlertsModal.tsx`.
 
-Key rules:
-- Backdrop: `fixed inset-0 bg-black bg-opacity-50 ... z-50`
-- Card: `bg-white rounded-xl max-w-{size} w-full`
-- ALWAYS include a close button in the header
-- ALWAYS use `btn-primary` and `btn-secondary` for action buttons
-- Max width varies: `max-w-md` for forms, `max-w-lg` for content-heavy modals
+The backdrop (`fixed inset-0 bg-black bg-opacity-50 ... z-50`), the card
+(`bg-white rounded-xl max-w-{size} w-full`), the close button SVG, and the
+action button classes are all consistent across every modal. Copy this structure
+exactly rather than improvising — consistency is what makes the app feel like a
+single product. Max width varies: `max-w-md` for forms, `max-w-lg` for
+content-heavy modals.
 
 ### Tab Pattern
 
@@ -295,20 +309,22 @@ export default function SomeTab({ petId, token, items, setItems }: Props) {
 }
 ```
 
-Key rules:
-- State is lifted: tab receives `items` and `setItems` from the parent
+Key details:
+- State is lifted: the tab receives `items` and `setItems` from the parent
 - Field definitions live in `constants.ts`, not inline in the tab
 - `InlineEditForm` handles both add and edit (reused, not duplicated)
-- Delete has a confirmation pattern: click "Delete" -> shows "Sure? Yes No"
+- Delete has a confirmation pattern: click "Delete" → shows "Sure? Yes No"
 - Use `divide-y` for list item separation, not manual borders
 
 ### Form Field Definitions
 
-Field definitions for `InlineEditForm` MUST live in the `constants.ts` file for
-the relevant page, NOT inline in the component.
+Field definitions for `InlineEditForm` belong in the `constants.ts` file for
+the relevant page. Putting them inline in a component ties the configuration to
+a single render path, makes them impossible to reuse, and clutters JSX with data
+that isn't presentation logic.
 
-Good (from `constants.ts`):
 ```typescript
+// Right: in constants.ts
 export const ALLERGY_FIELDS: EditField[] = [
   { key: 'allergen', placeholder: 'Allergen *', required: true },
   { key: 'reaction', placeholder: 'Reaction (optional)' },
@@ -316,9 +332,8 @@ export const ALLERGY_FIELDS: EditField[] = [
 ];
 ```
 
-Bad:
 ```tsx
-// WRONG: field definitions inline in the component
+// Wrong: field definitions inline in the component
 <InlineEditForm
   fields={[
     { key: 'allergen', placeholder: 'Allergen *', required: true },
@@ -329,13 +344,25 @@ Bad:
 
 ### API Types
 
-ALL TypeScript types for API data live in `frontend/src/api/client.ts`. NEVER
-define a data type inline in a component file. If a new entity or field is added,
-the type in `client.ts` MUST be updated.
+All TypeScript types for API data live in `frontend/src/api/client.ts`. Defining
+a data type inline in a component means there's no single source of truth — when
+the API changes, the inline type won't be discovered by searching `client.ts`,
+and it will silently fall out of sync. If a new entity or field is added,
+`client.ts` is the one place to update, and TypeScript will propagate the change
+to every consumer.
+
+This means: when creating a new tab, modal, or component that works with a data
+entity, import the type from `client.ts`. If the type doesn't exist yet (because
+you're building a new feature), add it to `client.ts` first, then import it.
+Defining a local `interface` in the component file for API data — even as a
+"temporary" measure — creates exactly the kind of drift this rule prevents. The
+only exception is props interfaces (`SomeTabProps`, `SomeModalProps`) which are
+component-specific and belong in the component file.
 
 ## Error States
 
-Error alerts in forms MUST use the danger theme tokens:
+Error alerts in forms use the danger theme tokens so they stay visually
+consistent with other error states across the app:
 
 ```tsx
 {error && (
@@ -345,19 +372,5 @@ Error alerts in forms MUST use the danger theme tokens:
 )}
 ```
 
-NEVER use `bg-red-50 border-red-200 text-red-600` for error states. Use the
-theme tokens.
-
-## What NOT to Do
-
-- NEVER use Tailwind's default gray palette (`text-gray-*`, `bg-gray-*`) -- use `surface-*`
-- NEVER use Tailwind's default red/green/blue palettes -- use `danger`, `success`, `info`
-- NEVER use hardcoded hex colors in `className` (`bg-[#1B2A4A]`)
-- NEVER use `style={{}}` with CSS variable references (`var(--color-navy)`)
-- NEVER use `style={{}}` with hardcoded rgba/hex values
-- NEVER build button styles from raw utilities when a `.btn-*` class exists
-- NEVER build input styles from raw utilities when `.input` class exists
-- NEVER inline SVG for close buttons -- copy the X icon pattern from existing modals
-- NEVER define field configuration objects inside render functions
-- NEVER define API data types outside of `frontend/src/api/client.ts`
-- NEVER duplicate the same UI pattern across tabs -- extract to a shared component
+`bg-red-50 border-red-200 text-red-600` are the wrong classes here — they
+bypass the theme and won't update if the danger color ever changes.
