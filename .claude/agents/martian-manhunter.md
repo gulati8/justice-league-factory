@@ -5,7 +5,7 @@ description: >
   structured implementation plans and architecture documents.
 tools: Read, Glob, Grep, Write
 model: opus
-skills: planning-methodology
+skills: planning-methodology, database-patterns, frontend-patterns
 effort: high
 ---
 
