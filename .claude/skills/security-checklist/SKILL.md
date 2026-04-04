@@ -17,7 +17,7 @@ categories) and STRIDE (threat modeling).
 ## Review Scope
 
 Focus on code that was created or modified in this factory run. Use Cyborg's
-briefings (`artifacts/briefings/cyborg-*.json`) to identify which files changed.
+briefings (`.factory-run/briefings/cyborg-*.json`) to identify which files changed.
 Don't audit the entire codebase — that's noise, not signal.
 
 For each changed file, assess:

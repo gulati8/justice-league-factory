@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse hook for Write tool
-# Ensures the artifacts/ directory (and briefings/ subdirectory) exists
-# before any agent writes to an artifacts/ path.
+# Ensures the .factory-run/ directory (and briefings/ subdirectory) exists
+# before any agent writes to a .factory-run/ path.
 # Always exits 0 -- never blocks a write.
 
 set -euo pipefail
@@ -17,11 +17,11 @@ if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
-# Detect writes targeting an artifacts/ path
-if [[ "$FILE_PATH" == artifacts/* ]] || [[ "$FILE_PATH" == */artifacts/* ]]; then
-  # Extract the prefix before "artifacts/" (empty string for relative paths)
-  PREFIX="${FILE_PATH%%artifacts/*}"
-  mkdir -p "${PREFIX}artifacts/briefings" || true
+# Detect writes targeting a .factory-run/ path
+if [[ "$FILE_PATH" == .factory-run/* ]] || [[ "$FILE_PATH" == */.factory-run/* ]]; then
+  # Extract the prefix before ".factory-run/" (empty string for relative paths)
+  PREFIX="${FILE_PATH%%.factory-run/*}"
+  mkdir -p "${PREFIX}.factory-run/briefings" || true
 fi
 
 exit 0

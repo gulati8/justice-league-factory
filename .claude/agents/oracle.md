@@ -34,7 +34,7 @@ evidence. Open a PR against the factory repo.
    - Are there agents that could use a cheaper model without quality loss?
    - Are there cost or token anomalies?
 5. For each pattern, propose a specific change with evidence
-6. Write `artifacts/improvements.json` following `.claude/schemas/improvement.schema.json`
+6. Write `.factory-run/improvements.json` following `.claude/schemas/improvement.schema.json`
 7. Create a git branch, apply "safe" changes, open a PR via `gh pr create`
 
 ## Querying Telemetry

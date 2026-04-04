@@ -1,8 +1,6 @@
-artifacts/*.json
-artifacts/*.md
-artifacts/briefings/*
-!artifacts/briefings/.gitkeep
-!artifacts/.gitkeep
+.factory-run/*
+!.factory-run/.gitkeep
+!.factory-run/briefings/.gitkeep
 eval/eval-log.jsonl
 eval/last-run.log
 eval/oracle-run.log

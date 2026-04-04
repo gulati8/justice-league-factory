@@ -24,7 +24,7 @@ and user-facing feature documentation where applicable.
 
 ## Workflow
 
-1. Read `artifacts/architecture.md` — understand the intended design
+1. Read `.factory-run/architecture.md` — understand the intended design
 2. Read Cyborg briefings — understand what was actually built
 3. Read the actual code — verify accuracy against briefings
 4. Write documentation covering new endpoints, config options, architecture changes

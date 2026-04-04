@@ -2,7 +2,7 @@
 # PostToolUse hook for Write tool
 # Validates artifact JSON files against their schemas.
 # Exit 0 = allow, Exit 2 = block the write.
-# Only validates files in artifacts/ that match known artifact names.
+# Only validates files in .factory-run/ that match known artifact names.
 
 set -euo pipefail
 
@@ -18,13 +18,13 @@ if [ -z "$FILE_PATH" ]; then
 fi
 
 # Map known artifact paths to their schema files.
-# Only validate files inside the artifacts/ directory.
+# Only validate files inside the .factory-run/ directory.
 case "$FILE_PATH" in
-  */artifacts/plan.json)            SCHEMA="plan.schema.json" ;;
-  */artifacts/review.json)          SCHEMA="review.schema.json" ;;
-  */artifacts/test-results.json)    SCHEMA="test-results.schema.json" ;;
-  */artifacts/security-review.json) SCHEMA="security-review.schema.json" ;;
-  */artifacts/improvements.json)    SCHEMA="improvement.schema.json" ;;
+  */.factory-run/plan.json)            SCHEMA="plan.schema.json" ;;
+  */.factory-run/review.json)          SCHEMA="review.schema.json" ;;
+  */.factory-run/test-results.json)    SCHEMA="test-results.schema.json" ;;
+  */.factory-run/security-review.json) SCHEMA="security-review.schema.json" ;;
+  */.factory-run/improvements.json)    SCHEMA="improvement.schema.json" ;;
   *)
     # Not a known artifact — allow the write
     exit 0

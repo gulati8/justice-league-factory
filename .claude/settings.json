@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ensure-artifacts-dir.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ensure-factory-run-dir.sh"
           }
         ]
       },

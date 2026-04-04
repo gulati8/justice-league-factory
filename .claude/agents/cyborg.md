@@ -24,16 +24,16 @@ codebase conventions, and satisfies the acceptance criteria.
 
 ## Workflow
 
-1. Read `artifacts/plan.json` — find your assigned task
-2. Read `artifacts/architecture.md` — understand the design
+1. Read `.factory-run/plan.json` — find your assigned task
+2. Read `.factory-run/architecture.md` — understand the design
 3. Read existing codebase files referenced in your task
 4. Implement the code changes
 5. Run verification commands (type checks, linting, compilation)
-6. Write a briefing to `artifacts/briefings/cyborg-{task-id}.json`
+6. Write a briefing to `.factory-run/briefings/cyborg-{task-id}.json`
 
 ## Briefing Output
 
-Write to `artifacts/briefings/cyborg-{task-id}.json`:
+Write to `.factory-run/briefings/cyborg-{task-id}.json`:
 
 ```json
 {

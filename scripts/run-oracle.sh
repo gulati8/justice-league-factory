@@ -22,4 +22,4 @@ and open a PR with safe changes." \
 
 echo ""
 echo "=== Oracle analysis complete ==="
-echo "Improvements: $FACTORY_DIR/artifacts/improvements.json"
+echo "Improvements: $FACTORY_DIR/.factory-run/improvements.json"

@@ -48,7 +48,7 @@ Before declaring your task complete, verify:
 
 ## Briefing Format
 
-Your briefing (`artifacts/briefings/cyborg-{task-id}.json`) is consumed by
+Your briefing (`.factory-run/briefings/cyborg-{task-id}.json`) is consumed by
 Wonder Woman (reviewer) and Batman (orchestrator). Include:
 
 - **files_created / files_modified** — Exact paths. Wonder Woman reads these.

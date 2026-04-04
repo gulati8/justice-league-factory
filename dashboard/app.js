@@ -460,17 +460,17 @@ window.simulate = {
     this.start('martian-manhunter');
     this.tool('martian-manhunter', 'Read: scanning 12 source files...');
     await sleep(2000);
-    this.tool('martian-manhunter', 'Write artifacts/plan.json');
-    this.tool('martian-manhunter', 'Write artifacts/architecture.md');
+    this.tool('martian-manhunter', 'Write .factory-run/plan.json');
+    this.tool('martian-manhunter', 'Write .factory-run/architecture.md');
     this.stop('martian-manhunter', 'Plan complete — 5 tasks across 2 parallel groups');
     await sleep(1000);
 
     this.start('cyborg');
-    this.tool('cyborg', 'Read artifacts/plan.json');
+    this.tool('cyborg', 'Read .factory-run/plan.json');
     this.tool('cyborg', 'Edit src/components/PetAvatar.tsx');
     await sleep(2500);
     this.tool('cyborg', 'Bash: npm run build — success');
-    this.tool('cyborg', 'Write artifacts/briefings/cyborg-task-001.json');
+    this.tool('cyborg', 'Write .factory-run/briefings/cyborg-task-001.json');
     this.stop('cyborg', 'All tasks implemented. 5 files created, 3 modified.');
     await sleep(1000);
 
@@ -482,7 +482,7 @@ window.simulate = {
     this.tool('wonder-woman', 'Grep: scanning for code quality issues...');
     this.tool('flash', 'Write tests/PetAvatar.test.tsx');
     this.tool('green-lantern', 'Grep: scanning for OWASP patterns...');
-    this.tool('lois-lane', 'Read artifacts/architecture.md');
+    this.tool('lois-lane', 'Read .factory-run/architecture.md');
     await sleep(2000);
     this.stop('wonder-woman', '3 issues found (0 critical). Verdict: PASS');
     await sleep(500);

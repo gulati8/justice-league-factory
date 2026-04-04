@@ -22,11 +22,11 @@ software changes — then improve themselves over time.
 | Agent | Role | Tools | Output |
 |-------|------|-------|--------|
 | Batman | Orchestrator | Read, Write, Agent, Bash | Coordinates all agents |
-| Martian Manhunter | Planner | Read, Glob, Grep, Write | artifacts/plan.json + architecture.md |
+| Martian Manhunter | Planner | Read, Glob, Grep, Write | .factory-run/plan.json + architecture.md |
 | Cyborg | Coder | Read, Write, Edit, Bash | Working code + briefings |
-| Wonder Woman | Reviewer | Read, Glob, Grep, Write | artifacts/review.json |
-| Flash | QA/Tester | Read, Write, Edit, Bash | Tests + artifacts/test-results.json |
-| Green Lantern | Security | Read, Glob, Grep, Write | artifacts/security-review.json |
+| Wonder Woman | Reviewer | Read, Glob, Grep, Write | .factory-run/review.json |
+| Flash | QA/Tester | Read, Write, Edit, Bash | Tests + .factory-run/test-results.json |
+| Green Lantern | Security | Read, Glob, Grep, Write | .factory-run/security-review.json |
 | Lois Lane | Docs | Read, Glob, Write | Documentation files |
 | Oracle | Learner | Read, Glob, Grep, Write, Bash | improvements.json + PR |
 

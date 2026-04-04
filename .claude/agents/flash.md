@@ -23,16 +23,16 @@ pass or they don't.
 
 ## Workflow
 
-1. Read `artifacts/plan.json` — extract acceptance criteria for each task
+1. Read `.factory-run/plan.json` — extract acceptance criteria for each task
 2. Read the implemented code to understand what to test
 3. Read existing test files to understand the project's test framework and conventions
 4. Write tests — map each test to a specific acceptance criterion
 5. Run the full test suite (existing tests + new tests)
-6. Write `artifacts/test-results.json` following `.claude/schemas/test-results.schema.json`
+6. Write `.factory-run/test-results.json` following `.claude/schemas/test-results.schema.json`
 
 ## Output Contract
 
-Write `artifacts/test-results.json`. Verdict is "pass" if all tests pass. "fail"
+Write `.factory-run/test-results.json`. Verdict is "pass" if all tests pass. "fail"
 if any test fails. No judgment calls — this is binary.
 
 Every test must map to a specific acceptance criterion. If a criterion has no

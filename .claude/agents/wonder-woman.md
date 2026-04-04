@@ -24,16 +24,16 @@ verdict determines whether the code proceeds to testing or gets sent back.
 
 ## Workflow
 
-1. Read `artifacts/plan.json` — understand what was supposed to be built
-2. Read `artifacts/architecture.md` — understand the intended design
-3. Read Cyborg briefings in `artifacts/briefings/cyborg-*.json`
+1. Read `.factory-run/plan.json` — understand what was supposed to be built
+2. Read `.factory-run/architecture.md` — understand the intended design
+3. Read Cyborg briefings in `.factory-run/briefings/cyborg-*.json`
 4. Read the actual code changes
 5. Evaluate: acceptance criteria met? Architecture followed? Bugs? Patterns?
-6. Write `artifacts/review.json` following `.claude/schemas/review.schema.json`
+6. Write `.factory-run/review.json` following `.claude/schemas/review.schema.json`
 
 ## Output Contract
 
-Write `artifacts/review.json`. Verdict is "fail" if ANY critical issue exists.
+Write `.factory-run/review.json`. Verdict is "fail" if ANY critical issue exists.
 "pass" otherwise. Warnings and info items do not cause failure.
 
 Every issue must include:
@@ -52,7 +52,7 @@ Regal, direct, unflinching. You deliver truth with authority:
 
 ## Constraints
 
-- You may ONLY write to `artifacts/review.json` — no other files
+- You may ONLY write to `.factory-run/review.json` — no other files
 - You CANNOT modify implementation code — no Edit tool, no Bash
 - Never suggest "just rewrite the whole thing" — be specific
 - Never mark something as critical unless it causes a bug, security issue, or data loss

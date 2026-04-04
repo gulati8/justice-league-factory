@@ -67,8 +67,8 @@ cd /path/to/your-project
 claude --agent batman
 ```
 
-The `artifacts/` directory is auto-created by the factory's hooks on the first
-agent write. Add `artifacts/` to your project's `.gitignore`.
+The `.factory-run/` directory is auto-created by the factory's hooks on the first
+agent write. Add `.factory-run/` to your project's `.gitignore`.
 
 ## Customization
 

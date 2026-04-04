@@ -23,15 +23,15 @@ you don't need to repeat them.
 ### Martian Manhunter — Architect/Planner
 
 - **Needs:** Feature request text + access to the project codebase
-- **Produces:** `artifacts/plan.json` + `artifacts/architecture.md`
+- **Produces:** `.factory-run/plan.json` + `.factory-run/architecture.md`
 - **Tools:** Read, Glob, Grep, Write (read-heavy, write-only for artifacts)
 - **Key behavior:** Decomposes features into tasks with `parallel_group` assignments
   and testable acceptance criteria. Each task scoped to max 3 files.
 
 ### Cyborg — Coder
 
-- **Needs:** `artifacts/plan.json` + `artifacts/architecture.md` + assigned task ID
-- **Produces:** Working code in the project repo + `artifacts/briefings/cyborg-{task-id}.json`
+- **Needs:** `.factory-run/plan.json` + `.factory-run/architecture.md` + assigned task ID
+- **Produces:** Working code in the project repo + `.factory-run/briefings/cyborg-{task-id}.json`
 - **Tools:** Read, Write, Edit, Bash (full implementation access)
 - **Key behavior:** Implements exactly what the plan says. Follows existing codebase
   patterns. One Cyborg per task — multiple Cyborgs can run in parallel for
@@ -39,17 +39,17 @@ you don't need to repeat them.
 
 ### Wonder Woman — Reviewer
 
-- **Needs:** `artifacts/plan.json` + `artifacts/architecture.md` + code to review
-- **Produces:** `artifacts/review.json`
-- **Tools:** Read, Glob, Grep, Write (can only write `artifacts/review.json`)
+- **Needs:** `.factory-run/plan.json` + `.factory-run/architecture.md` + code to review
+- **Produces:** `.factory-run/review.json`
+- **Tools:** Read, Glob, Grep, Write (can only write `.factory-run/review.json`)
 - **Key behavior:** Evaluates code against plan and architecture. Verdict is "pass"
   or "fail." Only critical issues cause failure. She writes her own review artifact
   directly — no proxy writing needed. She cannot Edit code or run Bash.
 
 ### The Flash — QA/Tester
 
-- **Needs:** `artifacts/plan.json` + code to test
-- **Produces:** Tests + `artifacts/test-results.json`
+- **Needs:** `.factory-run/plan.json` + code to test
+- **Produces:** Tests + `.factory-run/test-results.json`
 - **Tools:** Read, Write, Edit, Bash (writes tests, runs test suite)
 - **Key behavior:** Maps every test to a specific acceptance criterion from the plan.
   Verdict is deterministic — tests pass or they don't. Reports coverage gaps for
@@ -57,16 +57,16 @@ you don't need to repeat them.
 
 ### Green Lantern — Security
 
-- **Needs:** `artifacts/architecture.md` + code to audit + Cyborg briefings
-- **Produces:** `artifacts/security-review.json`
-- **Tools:** Read, Glob, Grep, Write (can only write `artifacts/security-review.json`)
+- **Needs:** `.factory-run/architecture.md` + code to audit + Cyborg briefings
+- **Produces:** `.factory-run/security-review.json`
+- **Tools:** Read, Glob, Grep, Write (can only write `.factory-run/security-review.json`)
 - **Key behavior:** OWASP Top 10 + STRIDE analysis on new/changed code. Verdict is
   "fail" if any critical or high severity finding. Writes his own security review
   artifact directly. Cannot Edit code or run Bash.
 
 ### Lois Lane — Documentation
 
-- **Needs:** `artifacts/architecture.md` + code + Cyborg briefings
+- **Needs:** `.factory-run/architecture.md` + code + Cyborg briefings
 - **Produces:** Documentation files in the project
 - **Tools:** Read, Glob, Write (reads code, writes docs)
 - **Key behavior:** Documents what the code DOES, not what it was planned to do.
@@ -76,7 +76,7 @@ you don't need to repeat them.
 ### Oracle — Learner
 
 - **Needs:** `eval/factory.db` (telemetry) + agent definitions + skill files
-- **Produces:** `artifacts/improvements.json` + PR via `gh pr create`
+- **Produces:** `.factory-run/improvements.json` + PR via `gh pr create`
 - **Tools:** Read, Glob, Grep, Write, Bash (queries SQLite, creates branches/PRs)
 - **Key behavior:** Analyzes telemetry across multiple runs. Every proposal backed
   by data. Only applies "safe" changes to the branch — documents riskier
@@ -163,13 +163,13 @@ When dispatching an agent, include:
 3. The project directory path
 
 Example for Martian Manhunter: "Read the feature request below and the codebase
-at [project path]. Produce artifacts/plan.json and artifacts/architecture.md."
+at [project path]. Produce .factory-run/plan.json and .factory-run/architecture.md."
 
-Example for Cyborg: "Read artifacts/plan.json and artifacts/architecture.md.
+Example for Cyborg: "Read .factory-run/plan.json and .factory-run/architecture.md.
 Implement task-001. The project is at [project path]."
 
-Example for Wonder Woman: "Review the code changes against artifacts/plan.json
-and artifacts/architecture.md. Write your findings to artifacts/review.json."
+Example for Wonder Woman: "Review the code changes against .factory-run/plan.json
+and .factory-run/architecture.md. Write your findings to .factory-run/review.json."
 
 ## Dispatch Patterns
 

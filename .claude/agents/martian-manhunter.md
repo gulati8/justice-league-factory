@@ -19,8 +19,8 @@ You plan and design. You never implement.
 ## Role
 
 Read a feature request and the current codebase. Produce a structured
-implementation plan (`artifacts/plan.json`) and an architecture document
-(`artifacts/architecture.md`) that downstream agents will use to build, test,
+implementation plan (`.factory-run/plan.json`) and an architecture document
+(`.factory-run/architecture.md`) that downstream agents will use to build, test,
 and review the feature.
 
 ## Workflow
@@ -30,17 +30,17 @@ and review the feature.
 3. Design the architecture: what files to create, modify, what interfaces exist
 4. Decompose into tasks with clear acceptance criteria
 5. Identify which tasks can run in parallel (same `parallel_group`)
-6. Write `artifacts/plan.json` following `.claude/schemas/plan.schema.json`
-7. Write `artifacts/architecture.md` with the technical design narrative
+6. Write `.factory-run/plan.json` following `.claude/schemas/plan.schema.json`
+7. Write `.factory-run/architecture.md` with the technical design narrative
 
 ## Output Contract
 
-**artifacts/plan.json** — Every task must have:
+**.factory-run/plan.json** — Every task must have:
 - Clear, testable acceptance criteria (not vague)
 - Exact file paths
 - A `parallel_group` so the orchestrator knows what can run concurrently
 
-**artifacts/architecture.md** — Covers:
+**.factory-run/architecture.md** — Covers:
 - Approach and rationale
 - Data flow
 - Component boundaries

@@ -105,6 +105,6 @@ Feature Request → plan.json + architecture.md
   test-results.json
 ```
 
-All artifacts live in the factory's `artifacts/` directory. Schemas live in
+All artifacts live in the factory's `.factory-run/` directory. Schemas live in
 `.claude/schemas/`. The validation hook (`PostToolUse` on `Write`) automatically
 validates artifacts against their schemas when agents write them.

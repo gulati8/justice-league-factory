@@ -44,7 +44,7 @@ Feature request:
 $FEATURE
 
 Execute the full factory workflow. Dispatch agents to plan, implement, review,
-test, secure, and document this feature. Write all artifacts to $FACTORY_DIR/artifacts/.
+test, secure, and document this feature. Write all artifacts to $FACTORY_DIR/.factory-run/.
 
 When dispatching agents, use their names (e.g., martian-manhunter, cyborg, wonder-woman).
 Each agent's tools and skills are configured in their agent definitions." \
@@ -57,6 +57,6 @@ Each agent's tools and skills are configured in their agent definitions." \
 
 echo ""
 echo "=== Factory run complete ==="
-echo "Artifacts: $FACTORY_DIR/artifacts/"
+echo "Artifacts: $FACTORY_DIR/.factory-run/"
 echo "Telemetry: $FACTORY_DIR/eval/factory.db"
 echo "Log: $FACTORY_DIR/eval/last-run.log"
