@@ -1,5 +1,7 @@
 .factory-run/*
 !.factory-run/.gitkeep
+!.factory-run/briefings/
+.factory-run/briefings/*
 !.factory-run/briefings/.gitkeep
 eval/eval-log.jsonl
 eval/last-run.log
