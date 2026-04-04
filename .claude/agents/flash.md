@@ -5,7 +5,7 @@ description: >
   plan. Reports deterministic pass/fail results.
 tools: Read, Write, Edit, Bash
 model: sonnet
-skills: testing-methodology
+skills: testing-methodology, e2e-regression-testing
 effort: high
 ---
 

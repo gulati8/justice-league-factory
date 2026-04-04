@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Feature Request",
+  "description": "Structured feature request produced by Brainiac",
+  "type": "object",
+  "required": [
+    "title", "problem_statement", "proposed_solution", "constraints",
+    "mvp_scope", "acceptance_criteria", "risks", "effort_estimate",
+    "research_brief_path"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Short, imperative name for the feature"
+    },
+    "problem_statement": {
+      "type": "string",
+      "description": "Description of the problem or opportunity this feature addresses"
+    },
+    "proposed_solution": {
+      "type": "string",
+      "description": "High-level description of the proposed approach to solve the problem"
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Technical, business, or time constraints that bound the solution"
+    },
+    "mvp_scope": {
+      "type": "object",
+      "required": ["in", "out"],
+      "properties": {
+        "in": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Capabilities explicitly included in the MVP"
+        },
+        "out": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Capabilities explicitly excluded from the MVP"
+        }
+      },
+      "description": "Explicit in/out scope boundaries for the minimum viable product"
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Verifiable conditions that must be true for the feature to be considered complete"
+    },
+    "risks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Known risks or unknowns that could affect delivery or correctness"
+    },
+    "effort_estimate": {
+      "type": "string",
+      "enum": ["XS", "S", "M", "L", "XL"],
+      "description": "T-shirt size estimate of implementation effort"
+    },
+    "research_brief_path": {
+      "type": "string",
+      "description": "Relative path to the research brief artifact produced alongside this feature request"
+    }
+  }
+}

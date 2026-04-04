@@ -20,6 +20,7 @@ fi
 # Map known artifact paths to their schema files.
 # Only validate files inside the .factory-run/ directory.
 case "$FILE_PATH" in
+  */.factory-run/feature-request.json) SCHEMA="feature-request.schema.json" ;;
   */.factory-run/plan.json)            SCHEMA="plan.schema.json" ;;
   */.factory-run/review.json)          SCHEMA="review.schema.json" ;;
   */.factory-run/test-results.json)    SCHEMA="test-results.schema.json" ;;

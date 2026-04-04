@@ -20,6 +20,16 @@ Each agent runs in an isolated context with scoped tools. You dispatch them by
 name via the Agent tool. Their tool restrictions are enforced by the system —
 you don't need to repeat them.
 
+### Brainiac — Deep Researcher
+
+- **Needs:** Raw concept/idea text; web access for landscape research
+- **Produces:** `.factory-run/research-brief.md`, `.factory-run/feature-request.json`
+- **Tools:** Read, Glob, Grep, Write, WebSearch, WebFetch
+- **Key behavior:** Researches abstract concepts through six phases (concept extraction,
+  landscape survey, constraint discovery, shape definition, risk assessment, output
+  crystallization). Only dispatched when input is vague or lacks a concrete feature
+  request. First agent with web access.
+
 ### Martian Manhunter — Architect/Planner
 
 - **Needs:** Feature request text + access to the project codebase
@@ -90,9 +100,17 @@ consumers. This graph determines what can run when — you reason about it rathe
 than following a fixed sequence.
 
 ```
-Feature Request (input)
+Vague Concept (input)
     │
-    ▼
+    ▼ (optional — skip if input is already a concrete feature request)
+┌──────────────────┐
+│    Brainiac      │
+└────────┬─────────┘
+         │
+    research-brief.md
+    feature-request.json
+         │
+         ▼ (or: Feature Request fed directly here)
 ┌─────────────────┐
 │ Martian Manhunter│
 └────────┬────────┘
@@ -139,6 +157,11 @@ plan.json   architecture.md
 - Oracle is never part of a normal factory run — it's run separately
 
 ## How to Reason
+
+Before anything else, assess the input. Is it a concrete feature request with
+clear requirements, problem statement, and acceptance criteria? Or is it a vague
+concept that needs research? If vague, dispatch Brainiac first. If concrete, skip
+straight to Martian Manhunter.
 
 Before each dispatch, ask yourself:
 - What artifacts exist right now?
@@ -203,8 +226,54 @@ When a quality gate agent (Wonder Woman or Flash) returns a "fail" verdict:
 
 The retry loop is: Cyborg fixes → quality gate re-evaluates → pass or retry.
 
+### Skill/Agent Creation
+
+Skill and agent creation tasks are structurally different from feature requests.
+Recognize them by pattern — "add a new agent," "create a skill for X," "teach
+the factory to do Y" — and handle them differently.
+
+**The craft process happens before you are involved.** The skill content itself
+— methodology, phases, voice, constraints — is drafted and iterated using
+Anthropic's built-in `skill-creator` skill. This is a human-in-the-loop process
+that runs interactively, outside the factory pipeline. Batman does not dispatch
+agents for this phase. The human does it with `skill-creator` directly. Your
+role begins only after the skill content is ready and the human hands off the
+integration work.
+
+**Batman's dispatch sequence for factory integration:**
+
+1. **Dispatch Martian Manhunter** to plan the integration. The prompt should be
+   explicit: the skill content already exists; the work is registering it in
+   agent frontmatter, creating any necessary JSON schemas, adding validation
+   hook cases, updating the factory-workflow roster and artifact dependency
+   graph, updating artifact contracts, and updating CLAUDE.md. Martian Manhunter
+   produces `plan.json` and `architecture.md` as normal.
+
+2. **Dispatch Cyborg** to implement the integration tasks from the plan — writing
+   agent definition files, schema files, hook additions, and roster/contract
+   updates. Cyborg works from the plan exactly as in any other factory run.
+
+3. **Dispatch Wonder Woman** to review cross-file consistency. Her focus here is
+   not logic correctness but structural coherence: do field names in schemas match
+   what skill guidance references? Do heading names in agent files match the
+   skills they load? Are artifact paths consistent across the workflow skill,
+   artifact contracts, and hook cases? Inconsistencies here cause silent failures
+   that are hard to diagnose later.
+
+4. **If Wonder Woman finds issues, dispatch Cyborg to fix them**, then re-dispatch
+   Wonder Woman. Apply the standard retry pattern — stop after 3 failures on the
+   same issue and report.
+
+Note: Flash, Green Lantern, and Lois Lane are typically not needed for
+skill/agent integration tasks unless the integration includes application code.
+Use judgment — if the integration touches nothing but factory config files, skip
+the test and security gates.
+
 ### Conditional Dispatch
 You can skip agents when the context makes them unnecessary:
+- Skip Brainiac if the input is already a well-formed feature request with a clear
+  problem statement, proposed solution, and acceptance criteria — or if a
+  `.factory-run/feature-request.json` already exists.
 - Skip Green Lantern if changes are purely cosmetic (CSS, copy, formatting)
 - Skip Lois Lane if changes are internal refactors with no user-facing impact
 - Never skip Wonder Woman — code review always happens

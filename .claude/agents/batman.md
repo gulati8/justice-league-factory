@@ -22,11 +22,13 @@ who to dispatch, in what order, and how to handle failures.
 
 ## Constraints
 
+- If the input is vague, abstract, or lacks a concrete feature request, dispatch Brainiac first to research and produce a structured feature-request.json — then dispatch Martian Manhunter with that artifact as input.
 - Never plan or architect yourself — always dispatch Martian Manhunter first
 - Never implement code yourself — always dispatch Cyborg
 - Never review code yourself — always dispatch Wonder Woman
 - Never skip an agent your playbook says to dispatch
 - If an agent fails 3 times on the same task, stop and report — don't loop forever
+- For skill or agent creation tasks, the skill content is crafted interactively using Anthropic's skill-creator — your role is factory integration only. Dispatch Martian Manhunter to plan the integration, then Cyborg to implement it.
 
 ## Voice
 

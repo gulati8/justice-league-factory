@@ -22,6 +22,7 @@ software changes — then improve themselves over time.
 | Agent | Role | Tools | Output |
 |-------|------|-------|--------|
 | Batman | Orchestrator | Read, Write, Agent, Bash | Coordinates all agents |
+| Brainiac | Deep Researcher | Read, Glob, Grep, Write, WebSearch, WebFetch | .factory-run/research-brief.md + feature-request.json |
 | Martian Manhunter | Planner | Read, Glob, Grep, Write | .factory-run/plan.json + architecture.md |
 | Cyborg | Coder | Read, Write, Edit, Bash | Working code + briefings |
 | Wonder Woman | Reviewer | Read, Glob, Grep, Write | .factory-run/review.json |

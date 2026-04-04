@@ -117,6 +117,143 @@ Your output must conform to `.claude/schemas/plan.schema.json`. Key fields:
 }
 ```
 
+## When the Feature Is a New Skill or Agent
+
+Some feature requests ask not for application code but for factory infrastructure
+itself — a new skill, a new agent, or both. These follow the same decomposition
+rules but require additional integration thinking. Plan them carefully; a
+poorly-integrated skill creates confusion for every subsequent factory run.
+
+### Delivery Vehicle Decision
+
+The first question is what to build:
+
+- **Skill only** — When the output is reusable methodology that multiple agents
+  should share, or when the feature is user-invocable guidance (e.g., a
+  `deep-research` skill that any agent can load). Skills are the right vehicle
+  when there is no distinct persona, no unique tool scope, and no need for an
+  isolated execution context.
+- **Agent only** — Rare. Only when the capability requires a fundamentally
+  different tool set that cannot be expressed as a skill, AND when there is no
+  reusable methodology worth extracting. In practice, a standalone agent with no
+  backing skill is a code smell — it means the agent's approach cannot be
+  explained or reused outside that agent's context.
+- **Both (the default)** — Every new agent should have a backing skill. The
+  agent definition (frontmatter + persona) describes *who* does the work; the
+  skill describes *how* they do it. The skill is also what Oracle can propose
+  improvements to without touching agent identity. If you are planning a new
+  agent, include a companion skill task unless you can articulate why the
+  methodology is not reusable.
+
+Concrete decision criteria:
+- Does the capability require tools no existing agent has? → New agent.
+- Does the capability codify a methodology others should follow? → New skill.
+- Is this a named role with a distinct persona and tool scope? → Agent + skill.
+- Is this a reusable process that slots into an existing agent? → Skill only,
+  added to that agent's `skills` frontmatter.
+
+### Factory Patterns to Follow
+
+Point Cyborg to concrete reference files rather than describing patterns in the
+abstract.
+
+**Agent frontmatter pattern:** Any file in `.claude/agents/*.md` shows the
+correct structure — YAML frontmatter with `name`, `description`, `tools`,
+`model`, `skills`, `maxTurns`, and `effort` fields, followed by the persona
+body. The `tools` field is the single source of truth for what the agent can
+do; do not grant tools via the prompt body.
+
+**Skill frontmatter pattern:** Any file in `.claude/skills/*/SKILL.md` shows
+the correct structure — YAML frontmatter with `name`, `description`,
+`user-invocable`, and `disable-model-invocation` fields. Skills injected into
+agents (not user-invocable) should set `user-invocable: false`.
+
+**Skill content structure:** H1 title, one intro paragraph stating the skill's
+purpose and scope, `##` phase or topic sections, a `## Voice` section (if the
+skill targets a persona agent), and a `## Constraints` section listing hard
+limits. Match the depth and tone of adjacent skills.
+
+**Naming conventions:** Skills use kebab-case directory names (e.g.,
+`planning-methodology`). Agent filenames are lowercase (e.g., `batman.md`).
+Skill names in frontmatter match the directory name. Agent names in frontmatter
+match the filename stem.
+
+### Validation Strategy
+
+Not every artifact needs a JSON Schema. Apply the right level of validation:
+
+- **Machine-consumed artifacts** — Artifacts that flow from one agent to
+  another as structured data (e.g., `plan.json`, `review.json`,
+  `feature-request.json`) must have a schema in `.claude/schemas/` and a
+  corresponding case in `.claude/hooks/validate-artifact.sh`. These are the
+  handoff points where a malformed artifact will silently break downstream
+  agents.
+- **Human-consumed artifacts** — Narrative markdown outputs (e.g.,
+  `architecture.md`, `research-brief.md`, documentation files) do not need
+  JSON Schemas. Their structure is enforced through skill guidance: required
+  headings, minimum content expectations, and examples. The skill itself is
+  the specification.
+
+Principle: **Schema the handoff, not the thinking.** The moment an artifact
+crosses an agent boundary as structured data, schema it. Internal reasoning,
+narrative summaries, and documentation live by convention, not machine
+enforcement.
+
+When planning a new agent whose output will be consumed by another agent as
+JSON, include tasks for: (1) creating the schema file, (2) adding the
+validation case to the hook script, and (3) updating the artifact contracts
+reference.
+
+### Integration Checklist
+
+A new skill or agent rarely exists in isolation. For each new addition, assess
+whether these files need updates and include them as explicit tasks in the plan:
+
+- **`.claude/agents/batman.md`** — Does Batman need new dispatch awareness?
+  If the new agent slots into the standard pipeline (plan → implement → review →
+  test), Batman's factory-workflow skill covers it. If dispatch is conditional
+  or the agent runs outside the normal sequence, add a constraint or note to
+  Batman's definition.
+- **`.claude/skills/factory-workflow/SKILL.md`** — The roster section, artifact
+  dependency graph, reasoning section, and dispatch patterns all reference the
+  full team. A new agent needs a roster entry, a node in the graph, and notes on
+  when to dispatch it (including any conditional dispatch rules).
+- **`.claude/skills/factory-workflow/references/artifact-contracts.md`** — Every
+  new artifact (input or output) produced by the new agent needs a contract
+  entry: path, producer, consumers, schema reference, and description.
+- **`.claude/hooks/validate-artifact.sh`** — Add a case for each new
+  machine-consumed artifact. The hook runs after every Write to `.factory-run/`
+  and will silently pass if no case matches — so missing cases mean missing
+  validation.
+- **`.claude/settings.json`** — If the new agent requires tool permissions not
+  already listed, add them here. The tools frontmatter field alone is not
+  sufficient; the settings file enforces tool access at the system level.
+- **`CLAUDE.md`** — The agent roster table in CLAUDE.md is the human-facing
+  index of the factory. Add a row for every new agent with role, tools, and
+  output.
+
+Not every addition requires all six updates. Size the task list to what
+actually changes — but check each item explicitly rather than assuming it's
+unnecessary.
+
+### Anthropic's skill-creator Handles the Craft
+
+The actual work of drafting skill content — writing the methodology, testing
+it with subagents, benchmarking against baselines, iterating on phrasing, and
+optimizing the description field for retrieval — is handled by Anthropic's
+built-in `skill-creator` skill. That is a human-in-the-loop craft process
+that happens interactively, outside the factory pipeline.
+
+Martian Manhunter's job is to plan the **factory integration**, not the skill
+content itself. By the time this plan is executed, the skill content already
+exists. The plan tasks are: register the skill in the right agent's frontmatter,
+create schemas for any new artifacts, add validation hooks, update the roster
+and workflow references, and update CLAUDE.md.
+
+The plan should therefore include integration tasks that Cyborg will execute
+**after** the skill has been crafted and tested. Do not include tasks for
+"write the skill content" — that work is already done upstream.
+
 ## Common Pitfalls
 
 - **Over-decomposing:** 10 tasks for a simple feature creates coordination
