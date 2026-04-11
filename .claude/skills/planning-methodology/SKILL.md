@@ -29,6 +29,22 @@ Your plan must follow these existing patterns. Downstream agents (especially
 Cyborg) will match what the codebase already does. If you introduce a new
 pattern, Cyborg will struggle to integrate it.
 
+## Product Thinking
+
+Before decomposing tasks, apply the product-thinking skill loaded alongside
+this one. Your plan must account for the full user experience, not just the
+technical implementation:
+
+- Map user journeys (happy path, error states, empty states, first-time experience)
+- Answer "what happens when..." questions for each user flow
+- Map notification/communication flows for multi-user features
+- Ensure edge cases and error states appear as explicit tasks or acceptance
+  criteria — not as afterthoughts
+
+The definition-of-done fields on each task (`user_impact`, `edge_cases`,
+`rollback_strategy`) are your mechanism for embedding product thinking into
+the plan structure. Every task must have these fields populated.
+
 ## Writing Acceptance Criteria
 
 Every task needs acceptance criteria that The Flash can write tests against.
@@ -108,7 +124,10 @@ Your output must conform to `.claude/schemas/plan.schema.json`. Key fields:
       "id": "task-001",
       "title": "Short description",
       "description": "What to implement",
-      "acceptance_criteria": ["Testable criterion 1", "..."],
+      "acceptance_criteria": ["Testable behavioral criterion 1", "..."],
+      "user_impact": "One sentence: what this enables for the end user",
+      "edge_cases": ["Empty state when no data exists", "Permission denied for non-owner"],
+      "rollback_strategy": "Revert migration 003, remove route from app.ts",
       "parallel_group": "group-a",
       "depends_on": [],
       "files": ["exact/paths"]
@@ -116,6 +135,26 @@ Your output must conform to `.claude/schemas/plan.schema.json`. Key fields:
   ]
 }
 ```
+
+### Definition-of-Done Fields (required on every task)
+
+**`user_impact`** — One sentence describing what this task enables for the end
+user. Not a technical description ("adds a database column") but a user outcome
+("allows users to see their share history"). This forces you to connect every
+task to a real user need. If you can't write a user impact statement, the task
+may be pure infrastructure — that's fine, but say "Infrastructure: enables X
+for subsequent tasks."
+
+**`edge_cases`** — Array of edge cases this task must handle. Derived from the
+product-thinking skill's "What happens when..." analysis. Each edge case should
+be specific enough that Cyborg knows what to implement and Flash knows what to
+test. "Handle errors" is not an edge case. "Return 404 with message when share
+target user does not exist" is.
+
+**`rollback_strategy`** — How to undo this task if it causes problems. For
+migrations: "revert migration NNN." For new files: "delete file, remove route
+registration." For modifications: "revert changes to file X." This forces you
+to think about reversibility during planning, not during a production incident.
 
 ## When the Feature Is a New Skill or Agent
 
