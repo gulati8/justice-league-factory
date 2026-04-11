@@ -60,7 +60,10 @@ Each task in `tasks` array contains:
 - `id` — Unique task identifier (e.g., "task-001")
 - `title` — Short description
 - `description` — What to implement
-- `acceptance_criteria` — Array of testable criteria (Flash writes tests against these)
+- `acceptance_criteria` — Array of testable behavioral criteria
+- `user_impact` — One sentence: what this task enables for the end user
+- `edge_cases` — Array of edge cases this task must handle
+- `rollback_strategy` — How to undo this task if it causes problems
 - `parallel_group` — Tasks with the same group can run concurrently
 - `depends_on` — Array of task IDs that must complete first (optional)
 - `files` — Array of file paths this task touches (optional)
@@ -96,9 +99,14 @@ Top-level required fields: `verdict`, `summary`, `tests_written`, `test_run`
 - `tests_written` — Array mapping each test to an acceptance criterion:
   - `file`, `test_name`, `covers` (which criterion)
 - `test_run` — Results: `total`, `passed`, `failed`, `skipped`, `command`, `output`
-- `coverage_gaps` — Acceptance criteria without test coverage
+- `coverage_matrix` — Maps plan artifacts to test coverage:
+  - `acceptance_criteria` — Array of `{criterion, test_names}` objects
+  - `user_journeys` — Array of `{journey, test_names}` objects
+  - `edge_cases` — Array of `{edge_case, test_names}` objects
+  - `uncovered` — Array of items with no test coverage and reasons
+- `coverage_gaps` — Acceptance criteria without test coverage (legacy field, kept for backwards compatibility)
 
-**Consumed by:** Batman (dispatch decision — retry Cyborg if fail)
+**Consumed by:** Batman (dispatch decision), Wonder Woman (coverage matrix verification)
 
 ## security-review.json (Producer: Green Lantern)
 
