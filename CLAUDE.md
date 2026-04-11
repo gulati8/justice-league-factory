@@ -19,17 +19,17 @@ software changes — then improve themselves over time.
 
 ## Agent Roster
 
-| Agent | Role | Tools | Output |
-|-------|------|-------|--------|
-| Batman | Orchestrator | Read, Write, Agent, Bash | Coordinates all agents |
-| Brainiac | Deep Researcher | Read, Glob, Grep, Write, WebSearch, WebFetch | .factory-run/research-brief.md + feature-request.json |
-| Martian Manhunter | Planner | Read, Glob, Grep, Write | .factory-run/plan.json + architecture.md |
-| Cyborg | Coder | Read, Write, Edit, Bash | Working code + briefings |
-| Wonder Woman | Reviewer | Read, Glob, Grep, Write | .factory-run/review.json |
-| Flash | QA/Tester | Read, Write, Edit, Bash | Tests + .factory-run/test-results.json |
-| Green Lantern | Security | Read, Glob, Grep, Write | .factory-run/security-review.json |
-| Lois Lane | Docs | Read, Glob, Write | Documentation files |
-| Oracle | Learner | Read, Glob, Grep, Write, Bash | improvements.json + PR |
+| Agent | Role | Tools | Skills | Output |
+|-------|------|-------|--------|--------|
+| Batman | Orchestrator | Read, Write, Agent, Bash | factory-workflow | Coordinates all agents |
+| Brainiac | Deep Researcher | Read, Glob, Grep, Write, WebSearch, WebFetch | deep-research, product-thinking | .factory-run/research-brief.md + feature-request.json |
+| Martian Manhunter | Planner | Read, Glob, Grep, Write | planning-methodology, product-thinking, architectural-principles, database-patterns, frontend-patterns | .factory-run/plan.json + architecture.md |
+| Cyborg | Coder | Read, Write, Edit, Bash | implementation-standards, architectural-principles, database-patterns, frontend-patterns | Working code + briefings |
+| Wonder Woman | Reviewer | Read, Glob, Grep, Write | review-criteria, architectural-principles, database-patterns, frontend-patterns | .factory-run/review.json |
+| Flash | QA/Tester | Read, Write, Edit, Bash | testing-methodology, e2e-regression-testing | Tests + .factory-run/test-results.json |
+| Green Lantern | Security | Read, Glob, Grep, Write | security-checklist | .factory-run/security-review.json |
+| Lois Lane | Docs | Read, Glob, Write | documentation-standards | Documentation files |
+| Oracle | Learner | Read, Glob, Grep, Write, Bash | improvement-methodology | improvements.json + PR |
 
 ## Running the Factory
 
