@@ -12,3 +12,5 @@ eval/factory.db
 eval/factory.db-journal
 .claude/hooks/__pycache__/
 e2e-regression-testing-workspace/
+.superpowers/
+__pycache__/
