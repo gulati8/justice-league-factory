@@ -14,6 +14,14 @@ import sqlite3
 import sys
 from datetime import datetime, timezone
 
+# Import cost calculation — gracefully degrade if not available
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "dashboard-api"))
+    from dashboard_api.cost import calculate_cost
+except ImportError:
+    def calculate_cost(**kwargs) -> float:
+        return 0.0
+
 
 def get_db_path() -> str:
     """Database lives in the factory repo, not the target project."""
@@ -119,13 +127,22 @@ def log_agent_run(conn: sqlite3.Connection, event: dict) -> int | None:
 
     transcript = parse_transcript(event.get("agent_transcript_path"))
 
+    cost = calculate_cost(
+        model=transcript["model"] or event.get("model"),
+        input_tokens=transcript["input_tokens"],
+        output_tokens=transcript["output_tokens"],
+        cache_read_tokens=transcript["cache_read_tokens"],
+        cache_creation_tokens=transcript["cache_creation_tokens"],
+    )
+
     cursor = conn.execute(
         """INSERT INTO agent_runs (
             run_id, agent, model, started_at, completed_at,
             duration_ms, input_tokens, output_tokens,
             cache_read_tokens, cache_creation_tokens,
-            verdict, retry_count, artifacts_produced
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            verdict, retry_count, artifacts_produced,
+            phase, cost_usd
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             event.get("session_id"),
             agent,
@@ -142,6 +159,8 @@ def log_agent_run(conn: sqlite3.Connection, event: dict) -> int | None:
             json.dumps(event.get("artifacts_produced"))
             if event.get("artifacts_produced")
             else None,
+            event.get("phase"),
+            cost,
         ),
     )
     conn.commit()
