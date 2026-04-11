@@ -57,14 +57,28 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "title", "description", "acceptance_criteria", "parallel_group"],
+        "required": ["id", "title", "description", "acceptance_criteria", "parallel_group", "user_impact", "edge_cases", "rollback_strategy"],
         "properties": {
           "id": { "type": "string" },
           "title": { "type": "string" },
           "description": { "type": "string" },
           "acceptance_criteria": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string" },
+            "description": "Behavioral criteria that test outcomes, not implementation details"
+          },
+          "user_impact": {
+            "type": "string",
+            "description": "One sentence describing what this task enables for the end user"
+          },
+          "edge_cases": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Edge cases considered and how they are handled"
+          },
+          "rollback_strategy": {
+            "type": "string",
+            "description": "How to undo this task if it causes problems"
           },
           "depends_on": {
             "type": "array",
