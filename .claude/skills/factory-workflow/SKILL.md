@@ -2,8 +2,8 @@
 name: factory-workflow
 description: >
   Orchestration playbook for the Justice League factory. Describes the team,
-  artifact dependencies, dispatch patterns, and failure handling. Injected into
-  Batman's context — not user-invocable.
+  artifact dependencies, multi-phase dispatch patterns, autonomy gates,
+  and failure handling. Injected into Batman's context — not user-invocable.
 user-invocable: false
 disable-model-invocation: true
 ---
@@ -11,8 +11,67 @@ disable-model-invocation: true
 # Factory Workflow
 
 This is your orchestration playbook. It describes your team, the artifacts that
-connect them, and the patterns for dispatching them effectively. Use it to
-reason about what to do next — not as a script to follow blindly.
+connect them, the multi-phase dispatch patterns that drive quality, and the
+autonomy gates that let the user control how hands-on they want to be.
+
+## Autonomy Gates
+
+Before dispatching any agents, you MUST establish the autonomy level for this
+run. There are three gates and three modes.
+
+### The Three Gates
+
+| Gate | When | What the user is approving |
+|------|------|-----------------------------|
+| **spec** | After Brainiac's research | "Is this the right thing to build?" |
+| **plan** | After MM's plan + devil's advocate | "Is this the right way to build it?" |
+| **ship** | After implementation + all quality gates | "Is this ready to ship?" |
+
+### The Three Modes
+
+| Mode | Behavior |
+|------|----------|
+| `auto` | Pipeline continues without pausing. Output is logged. |
+| `review` | You present a summary and wait for approval, rejection with feedback, or "approve and go auto for the rest." |
+| `skip` | Stage is skipped entirely. |
+
+### How to Establish Gates
+
+**No defaults. Always ask.** At the start of every factory run, if the user
+has not already specified gate preferences, ask:
+
+> "How hands-on do you want to be on this run? I can pause for your review at
+> three points: after the research/spec, after the plan, and before shipping.
+> For each gate, I can run it autonomously (auto), pause for your review
+> (review), or skip it entirely. What do you want?"
+
+The user may respond conversationally: "let me review the plan, rest is auto"
+or "full autonomy" or "review everything." Parse their intent and confirm:
+"Got it — spec: auto, plan: review, ship: auto."
+
+**Mid-run override.** The user can change gate settings at any time during the
+run. "Actually, just finish up, I'll review the PR" means switch remaining
+gates to auto.
+
+### Proactive Escalation
+
+Regardless of gate settings, you MUST surface problems rather than silently
+continuing. Even in full auto mode, pause and report if:
+
+- Wonder Woman's review has critical findings
+- Flash's tests fail
+- Green Lantern finds critical/high security issues
+- The devil's advocate pass substantially changed the plan (>25% of tasks modified)
+- An agent fails 3 times on the same task
+
+Full autonomy means "I trust you unless something is off," not "never ask me."
+
+## Trace ID
+
+At the start of every factory run, generate a unique `factory_run_id` using a
+format like `run_<8-char-hex>` (e.g., `run_a7f3b2c1`). Pass this ID in the
+prompt to every agent you dispatch. This enables telemetry correlation across
+all agents in a single run.
 
 ## Team Roster & Contracts
 
@@ -25,275 +84,211 @@ you don't need to repeat them.
 - **Needs:** Raw concept/idea text; web access for landscape research
 - **Produces:** `.factory-run/research-brief.md`, `.factory-run/feature-request.json`
 - **Tools:** Read, Glob, Grep, Write, WebSearch, WebFetch
-- **Key behavior:** Researches abstract concepts through six phases (concept extraction,
-  landscape survey, constraint discovery, shape definition, risk assessment, output
-  crystallization). Only dispatched when input is vague or lacks a concrete feature
-  request. First agent with web access.
+- **Skills:** deep-research, product-thinking
+- **Key behavior:** Researches abstract concepts through six phases. Now also
+  applies product-thinking: user journey mapping, edge case enumeration, and
+  notification flow analysis. First agent with web access.
 
 ### Martian Manhunter — Architect/Planner
 
 - **Needs:** Feature request text + access to the project codebase
 - **Produces:** `.factory-run/plan.json` + `.factory-run/architecture.md`
 - **Tools:** Read, Glob, Grep, Write (read-heavy, write-only for artifacts)
-- **Key behavior:** Decomposes features into tasks with `parallel_group` assignments
-  and testable acceptance criteria. Each task scoped to max 3 files.
+- **Skills:** planning-methodology, product-thinking, architectural-principles, database-patterns, frontend-patterns
+- **Key behavior:** Decomposes features into tasks with definition-of-done fields
+  (user_impact, edge_cases, rollback_strategy) and testable acceptance criteria.
+  Applies architectural-principles for sound engineering decisions. Applies
+  product-thinking for user-centric planning.
 
 ### Cyborg — Coder
 
 - **Needs:** `.factory-run/plan.json` + `.factory-run/architecture.md` + assigned task ID
 - **Produces:** Working code in the project repo + `.factory-run/briefings/cyborg-{task-id}.json`
 - **Tools:** Read, Write, Edit, Bash (full implementation access)
+- **Skills:** implementation-standards, architectural-principles, database-patterns, frontend-patterns
 - **Key behavior:** Implements exactly what the plan says. Follows existing codebase
-  patterns. One Cyborg per task — multiple Cyborgs can run in parallel for
-  tasks in the same `parallel_group`.
+  patterns AND architectural-principles. Implements edge cases listed in the task.
 
 ### Wonder Woman — Reviewer
 
 - **Needs:** `.factory-run/plan.json` + `.factory-run/architecture.md` + code to review
 - **Produces:** `.factory-run/review.json`
-- **Tools:** Read, Glob, Grep, Write (can only write `.factory-run/review.json`)
-- **Key behavior:** Evaluates code against plan and architecture. Verdict is "pass"
-  or "fail." Only critical issues cause failure. She writes her own review artifact
-  directly — no proxy writing needed. She cannot Edit code or run Bash.
+- **Tools:** Read, Glob, Grep, Write
+- **Skills:** review-criteria, architectural-principles, database-patterns, frontend-patterns
+- **Key behavior:** Evaluates code against plan, architecture, architectural-principles,
+  definition-of-done, and test coverage matrix. Verdict is "pass" or "fail."
 
 ### The Flash — QA/Tester
 
 - **Needs:** `.factory-run/plan.json` + code to test
 - **Produces:** Tests + `.factory-run/test-results.json`
-- **Tools:** Read, Write, Edit, Bash (writes tests, runs test suite)
-- **Key behavior:** Maps every test to a specific acceptance criterion from the plan.
-  Verdict is deterministic — tests pass or they don't. Reports coverage gaps for
-  criteria without tests.
+- **Tools:** Read, Write, Edit, Bash
+- **Skills:** testing-methodology, e2e-regression-testing
+- **Key behavior:** Maps tests to acceptance criteria, user journeys, and edge cases.
+  Produces a coverage matrix in test-results.json. Verdict is deterministic.
 
 ### Green Lantern — Security
 
 - **Needs:** `.factory-run/architecture.md` + code to audit + Cyborg briefings
 - **Produces:** `.factory-run/security-review.json`
-- **Tools:** Read, Glob, Grep, Write (can only write `.factory-run/security-review.json`)
-- **Key behavior:** OWASP Top 10 + STRIDE analysis on new/changed code. Verdict is
-  "fail" if any critical or high severity finding. Writes his own security review
-  artifact directly. Cannot Edit code or run Bash.
+- **Tools:** Read, Glob, Grep, Write
+- **Key behavior:** OWASP Top 10 + STRIDE analysis. Unchanged from before.
 
 ### Lois Lane — Documentation
 
 - **Needs:** `.factory-run/architecture.md` + code + Cyborg briefings
 - **Produces:** Documentation files in the project
-- **Tools:** Read, Glob, Write (reads code, writes docs)
+- **Tools:** Read, Glob, Write
 - **Key behavior:** Documents what the code DOES, not what it was planned to do.
-  If code diverges from architecture doc, documents the code and flags the
-  discrepancy.
+  Unchanged from before.
 
 ### Oracle — Learner
 
 - **Needs:** `eval/factory.db` (telemetry) + agent definitions + skill files
-- **Produces:** `.factory-run/improvements.json` + PR via `gh pr create`
-- **Tools:** Read, Glob, Grep, Write, Bash (queries SQLite, creates branches/PRs)
-- **Key behavior:** Analyzes telemetry across multiple runs. Every proposal backed
-  by data. Only applies "safe" changes to the branch — documents riskier
-  proposals in the PR body. Not dispatched during normal factory runs — run
-  separately via `scripts/run-oracle.sh`.
+- **Produces:** `.factory-run/improvements.json` + PR
+- **Tools:** Read, Glob, Grep, Write, Bash
+- **Key behavior:** Analyzes telemetry across runs. Not dispatched during normal
+  factory runs — run separately.
 
-## Artifact Dependency Graph
+## Multi-Phase Dispatch Sequence
 
-Artifacts are the conveyor belt between agents. Each artifact has a producer and
-consumers. This graph determines what can run when — you reason about it rather
-than following a fixed sequence.
+The factory pipeline is no longer a simple linear sequence. You engage agents in
+multiple phases, driving quality through how you prompt them — not just by
+dispatching them once.
 
-```
-Vague Concept (input)
-    │
-    ▼ (optional — skip if input is already a concrete feature request)
-┌──────────────────┐
-│    Brainiac      │
-└────────┬─────────┘
-         │
-    research-brief.md
-    feature-request.json
-         │
-         ▼ (or: Feature Request fed directly here)
-┌─────────────────┐
-│ Martian Manhunter│
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    ▼         ▼
-plan.json   architecture.md
-    │         │
-    ├─────────┤
-    ▼         ▼
-┌─────────────────┐
-│ Cyborg (×N)     │  ← One per task; parallel for same parallel_group
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    ▼         ▼
-  code    briefings/cyborg-*.json
-    │         │
-    ├─────────┤
-    │    ┌────┴──────────────────────┐
-    ▼    ▼              ▼            ▼
-┌──────────┐    ┌──────────────┐  ┌────────┐
-│Wonder    │    │Green Lantern │  │Lois    │
-│Woman     │    │              │  │Lane    │
-└────┬─────┘    └──────┬───────┘  └────┬───┘
-     ▼                 ▼               ▼
- review.json    security-review.json  docs
-     │
-     ▼
-┌──────────┐
-│ Flash    │
-└────┬─────┘
-     ▼
- test-results.json
-```
+### Phase 1: Research (optional — skip if input is concrete)
 
-**Key observations from this graph:**
-- Martian Manhunter must run first (everything depends on the plan)
-- Cyborg must complete before any reviewer or tester can run
-- Wonder Woman, Green Lantern, and Lois Lane are independent of each other —
-  dispatch them in parallel when possible
-- Flash typically runs after Wonder Woman (review before test), but they can
-  technically run in parallel since both only need code + plan
-- Oracle is never part of a normal factory run — it's run separately
+Dispatch Brainiac with the raw concept. Brainiac now has the product-thinking
+skill, so prompt them to include user journeys, edge cases, and notification
+flows in the research brief.
 
-## How to Reason
+**Prompt template:**
+> "Research the following concept and produce .factory-run/research-brief.md and
+> .factory-run/feature-request.json. In addition to your standard six-phase
+> research, apply product-thinking: map user journeys (happy path, error states,
+> empty states), enumerate 'what happens when...' scenarios, and map notification
+> flows for any multi-user interactions. Factory run ID: {factory_run_id}"
 
-Before anything else, assess the input. Is it a concrete feature request with
-clear requirements, problem statement, and acceptance criteria? Or is it a vague
-concept that needs research? If vague, dispatch Brainiac first. If concrete, skip
-straight to Martian Manhunter.
+**After Brainiac completes:** If spec gate is `review`, present a summary of
+the research brief and feature request. Wait for approval.
 
-Before each dispatch, ask yourself:
-- What artifacts exist right now?
-- What can I dispatch given what's available?
-- Can I dispatch multiple agents in parallel (independent inputs, no shared state)?
-- Did the last agent succeed or fail? What do I do about it?
+### Phase 2: Planning
 
-The natural order emerges from dependencies:
-- Nobody can code without a plan — Martian Manhunter goes first
-- Nobody can review without code — Cyborg before Wonder Woman
-- Nobody can test without code — Cyborg before Flash
-- Security and docs are independent — Green Lantern and Lois Lane can run in parallel
+Dispatch Martian Manhunter to produce plan.json and architecture.md. MM now has
+product-thinking and architectural-principles skills.
 
-If Wonder Woman's review fails, send Cyborg the review feedback and retry —
-then re-dispatch Wonder Woman. Same for Flash's test failures.
+**Prompt template:**
+> "Read the feature request at .factory-run/feature-request.json (or the text
+> below) and the codebase at {project_path}. Produce .factory-run/plan.json
+> and .factory-run/architecture.md. Apply product-thinking to ensure all user
+> journeys and edge cases are covered as tasks or acceptance criteria. Apply
+> architectural-principles to ensure sound engineering decisions. Every task
+> must include user_impact, edge_cases, and rollback_strategy fields.
+> Factory run ID: {factory_run_id}"
 
-## How to Dispatch
+### Phase 3: Devil's Advocate
 
-When dispatching an agent, include:
-1. Their specific mission for this dispatch
-2. Which artifacts to read (exact paths)
-3. The project directory path
+After Martian Manhunter produces the plan, send it back for adversarial review.
+This is a second dispatch to the SAME agent, not a new agent.
 
-Example for Martian Manhunter: "Read the feature request below and the codebase
-at [project path]. Produce .factory-run/plan.json and .factory-run/architecture.md."
+**Prompt template:**
+> "Review the plan you just produced at .factory-run/plan.json. Act as a devil's
+> advocate: What did you miss? What user scenarios aren't covered? What edge
+> cases will surprise users? What engineering shortcuts will cause problems
+> later? What happens when things go wrong — errors, empty states, permission
+> failures, concurrent access? Revise the plan to address your findings. Update
+> .factory-run/plan.json and .factory-run/architecture.md in place.
+> Factory run ID: {factory_run_id}"
 
-Example for Cyborg: "Read .factory-run/plan.json and .factory-run/architecture.md.
-Implement task-001. The project is at [project path]."
+**After devil's advocate completes:** If plan gate is `review`, present a
+summary of the plan including what the devil's advocate changed. Wait for
+approval. The user may add feedback that gets passed to Cyborg.
 
-Example for Wonder Woman: "Review the code changes against .factory-run/plan.json
-and .factory-run/architecture.md. Write your findings to .factory-run/review.json."
+### Phase 4: Implementation
 
-## Dispatch Patterns
+Dispatch Cyborg for each task. Use parallel groups for concurrent dispatch.
 
-### Sequential Dispatch
-When one agent's output is another's input. Wait for the Agent tool to return
-before dispatching the next.
+**Prompt template (per task):**
+> "Read .factory-run/plan.json and .factory-run/architecture.md. Implement
+> task {task_id}. Follow existing codebase patterns and architectural-principles.
+> Implement all edge cases listed in the task. The project is at {project_path}.
+> Factory run ID: {factory_run_id}"
 
-### Parallel Dispatch
-When agents have independent inputs and no shared state. Make multiple Agent
-tool calls in a single response — Claude Code runs them concurrently.
+### Phase 5: Quality Gates (all in parallel)
 
-**When to parallelize:**
-- Multiple Cyborgs working on tasks in the same `parallel_group`
-- After Cyborg completes, dispatch Wonder Woman + Green Lantern + Lois Lane +
-  Flash ALL at once in a single response. All four are read-only against the
-  code — they cannot conflict. Do NOT dispatch Wonder Woman first and then the
-  others after — that wastes time. All four go simultaneously.
+After all Cyborg tasks complete, dispatch Wonder Woman, Flash, Green Lantern,
+and Lois Lane ALL AT ONCE in a single response. All four are independent — they
+read code but don't modify implementation files.
 
-**Why all four at once:** Wonder Woman, Green Lantern, and Lois Lane only read
-code. Flash reads code and writes tests (in a separate test directory). None of
-them modify implementation files, so there is no conflict. Dispatching them
-sequentially when they could run in parallel adds minutes of unnecessary wait.
+**Do NOT dispatch Wonder Woman first and wait.** All four go simultaneously.
 
-### Retry on Failure
-When a quality gate agent (Wonder Woman or Flash) returns a "fail" verdict:
+**Prompt templates:**
 
-1. Read the failure details from the artifact (review.json or test-results.json)
+Wonder Woman:
+> "Review the code changes against .factory-run/plan.json and
+> .factory-run/architecture.md. Check against architectural-principles. Verify
+> definition-of-done fields. Check the coverage matrix in test-results.json if
+> available. Write .factory-run/review.json. Factory run ID: {factory_run_id}"
+
+Flash:
+> "Read .factory-run/plan.json. Write tests covering all acceptance criteria,
+> user journeys, and edge cases. Produce a coverage matrix mapping each to
+> test names. Write .factory-run/test-results.json. Factory run ID: {factory_run_id}"
+
+Green Lantern:
+> "Audit the code changes for security issues. Read .factory-run/architecture.md
+> and Cyborg briefings. Write .factory-run/security-review.json.
+> Factory run ID: {factory_run_id}"
+
+Lois Lane:
+> "Document the code changes. Read the code and .factory-run/architecture.md.
+> Write documentation. Factory run ID: {factory_run_id}"
+
+### Phase 6: Ship Gate
+
+After all quality gates complete, evaluate results:
+- If any critical failures: trigger retry loop (see below)
+- If all pass: if ship gate is `review`, present summary and wait. If `auto`, proceed.
+
+## Retry on Failure
+
+When a quality gate agent returns a "fail" verdict:
+
+1. Read the failure details from the artifact
 2. Dispatch Cyborg with the original task PLUS the failure feedback
 3. After Cyborg fixes, re-dispatch the quality gate agent
 4. If the same agent fails 3 times on the same issue, stop and report
+   (this triggers proactive escalation regardless of gate settings)
 
-The retry loop is: Cyborg fixes → quality gate re-evaluates → pass or retry.
+## Conditional Dispatch
 
-### Skill/Agent Creation
-
-Skill and agent creation tasks are structurally different from feature requests.
-Recognize them by pattern — "add a new agent," "create a skill for X," "teach
-the factory to do Y" — and handle them differently.
-
-**The craft process happens before you are involved.** The skill content itself
-— methodology, phases, voice, constraints — is drafted and iterated using
-Anthropic's built-in `skill-creator` skill. This is a human-in-the-loop process
-that runs interactively, outside the factory pipeline. Batman does not dispatch
-agents for this phase. The human does it with `skill-creator` directly. Your
-role begins only after the skill content is ready and the human hands off the
-integration work.
-
-**Batman's dispatch sequence for factory integration:**
-
-1. **Dispatch Martian Manhunter** to plan the integration. The prompt should be
-   explicit: the skill content already exists; the work is registering it in
-   agent frontmatter, creating any necessary JSON schemas, adding validation
-   hook cases, updating the factory-workflow roster and artifact dependency
-   graph, updating artifact contracts, and updating CLAUDE.md. Martian Manhunter
-   produces `plan.json` and `architecture.md` as normal.
-
-2. **Dispatch Cyborg** to implement the integration tasks from the plan — writing
-   agent definition files, schema files, hook additions, and roster/contract
-   updates. Cyborg works from the plan exactly as in any other factory run.
-
-3. **Dispatch Wonder Woman** to review cross-file consistency. Her focus here is
-   not logic correctness but structural coherence: do field names in schemas match
-   what skill guidance references? Do heading names in agent files match the
-   skills they load? Are artifact paths consistent across the workflow skill,
-   artifact contracts, and hook cases? Inconsistencies here cause silent failures
-   that are hard to diagnose later.
-
-4. **If Wonder Woman finds issues, dispatch Cyborg to fix them**, then re-dispatch
-   Wonder Woman. Apply the standard retry pattern — stop after 3 failures on the
-   same issue and report.
-
-Note: Flash, Green Lantern, and Lois Lane are typically not needed for
-skill/agent integration tasks unless the integration includes application code.
-Use judgment — if the integration touches nothing but factory config files, skip
-the test and security gates.
-
-### Conditional Dispatch
-You can skip agents when the context makes them unnecessary:
-- Skip Brainiac if the input is already a well-formed feature request with a clear
-  problem statement, proposed solution, and acceptance criteria — or if a
-  `.factory-run/feature-request.json` already exists.
-- Skip Green Lantern if changes are purely cosmetic (CSS, copy, formatting)
+- Skip Brainiac if the input is already a well-formed feature request
+- Skip Green Lantern if changes are purely cosmetic
 - Skip Lois Lane if changes are internal refactors with no user-facing impact
 - Never skip Wonder Woman — code review always happens
+- Never skip Flash — testing always happens
 
-Use your judgment. When in doubt, dispatch the agent — extra review is cheap
-compared to missed issues.
+## Skill/Agent Creation Dispatch
+
+Skill and agent creation tasks follow a different sequence — see the
+planning-methodology skill's "When the Feature Is a New Skill or Agent" section.
+The key difference: skill content is crafted interactively using skill-creator,
+then Batman dispatches Martian Manhunter to plan the factory integration.
 
 ## Compiling Results
 
-After all agents complete (or if the run fails), compile a summary. The
-telemetry hooks handle per-agent logging to SQLite automatically, but you should
-narrate the final status:
+After all agents complete, compile a summary:
 
 ```
 === Factory Run Complete ===
+Run ID: {factory_run_id}
 Feature: [feature name from plan.json]
+Gates: spec={mode} plan={mode} ship={mode}
 Plan: [N] tasks across [M] parallel groups
+Devil's Advocate: [N] changes made to original plan
 Implementation: [pass/fail] ([N] tasks completed, [retries] retries)
 Review: [verdict] ([N] issues, [N] critical)
-Tests: [verdict] ([passed]/[total] passed)
+Tests: [verdict] ([passed]/[total] passed, coverage matrix: [N]/[M] covered)
 Security: [verdict] ([N] findings, [N] critical/high)
 Docs: [complete/skipped]
 ```
