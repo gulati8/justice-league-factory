@@ -41,7 +41,18 @@ def init_db(db_path: str, schema_path: str) -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL")
     if os.path.isfile(schema_path):
         with open(schema_path, "r") as f:
-            conn.executescript(f.read())
+            sql = f.read()
+        # Execute each statement individually so ALTER TABLE migrations
+        # can fail silently on databases where the columns already exist.
+        for statement in sql.split(";"):
+            statement = statement.strip()
+            if not statement:
+                continue
+            try:
+                conn.execute(statement)
+            except sqlite3.OperationalError:
+                pass  # Expected: ALTER TABLE on already-existing column
+        conn.commit()
     return conn
 
 
