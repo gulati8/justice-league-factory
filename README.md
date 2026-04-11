@@ -9,14 +9,22 @@ A multi-agent software factory built on Claude Code native primitives. Specializ
 git clone https://github.com/gulati8/justice-league-factory.git
 cd justice-league-factory
 
-# Install optional dependency for artifact validation
-pip install jsonschema
+# Install dependencies
+pip install jsonschema  # artifact validation
+pip install -r dashboard-api/requirements.txt  # dashboard API (optional)
+cd dashboard-app && npm install && cd ..  # dashboard frontend (optional)
 
 # Interactive mode: invoke Batman directly
 claude --agent batman
 
 # Headless mode: against a project with a feature request
 ./scripts/run-factory.sh /path/to/project /path/to/feature-request.md
+
+# Headless with autonomy gates
+./scripts/run-factory.sh /path/to/project /path/to/request.md --gates "spec=auto plan=review ship=auto"
+
+# Launch the observability dashboard
+./scripts/serve-dashboard.sh
 ```
 
 ## How It Works
@@ -28,20 +36,21 @@ The factory uses Claude Code's native primitives:
 - **Hooks** (`.claude/settings.json`) — Deterministic artifact validation and telemetry logging. Not probabilistic — guaranteed to fire.
 - **Schemas** (`.claude/schemas/*.json`) — Structured contracts between agents.
 
-Batman (orchestrator) dispatches specialized agents who communicate through structured artifacts. The LLM drives the loop — Batman reasons about what to dispatch based on artifact state, not a hardcoded pipeline.
+Batman (orchestrator) dispatches specialized agents who communicate through structured artifacts. The pipeline uses multi-phase engagement — Brainiac researches and applies product thinking, Martian Manhunter plans then reviews his own plan as a devil's advocate, and configurable autonomy gates let you control how hands-on you want to be at each stage.
 
 ## Agents
 
-| Agent | Role | Tools |
-|-------|------|-------|
-| Batman | Orchestrator | Read, Write, Agent, Bash |
-| Martian Manhunter | Planner | Read, Glob, Grep, Write |
-| Cyborg | Coder | Read, Write, Edit, Bash |
-| Wonder Woman | Reviewer (read-only) | Read, Glob, Grep |
-| The Flash | QA/Tester | Read, Write, Edit, Bash |
-| Green Lantern | Security (read-only) | Read, Glob, Grep |
-| Lois Lane | Docs | Read, Glob, Write |
-| Oracle | Learner | Read, Glob, Grep, Write, Bash |
+| Agent | Role | Tools | Key Skills |
+|-------|------|-------|------------|
+| Batman | Orchestrator | Read, Write, Agent, Bash | factory-workflow |
+| Brainiac | Deep Researcher | Read, Glob, Grep, Write, WebSearch, WebFetch | deep-research, product-thinking |
+| Martian Manhunter | Planner | Read, Glob, Grep, Write | planning-methodology, product-thinking, architectural-principles |
+| Cyborg | Coder | Read, Write, Edit, Bash | implementation-standards, architectural-principles |
+| Wonder Woman | Reviewer | Read, Glob, Grep, Write | review-criteria, architectural-principles |
+| Flash | QA/Tester | Read, Write, Edit, Bash | testing-methodology, e2e-regression-testing |
+| Green Lantern | Security | Read, Glob, Grep, Write | security-checklist |
+| Lois Lane | Docs | Read, Glob, Write | documentation-standards |
+| Oracle | Learner | Read, Glob, Grep, Write, Bash | improvement-methodology |
 
 ## Scripts
 
