@@ -1,0 +1,51 @@
+:root {
+  --bg-primary: #0a0a1a;
+  --bg-secondary: #0d0d20;
+  --bg-card: #1e1b4b;
+  --bg-card-hover: #2e1065;
+  --bg-header: linear-gradient(90deg, #0a0a1a, #1a0a2e);
+  --border-primary: #1e1b4b;
+  --border-accent: #2e1065;
+  --border-highlight: #7c3aed;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #6b7280;
+  --text-accent: #a78bfa;
+  --status-pass: #34d399;
+  --status-fail: #f87171;
+  --status-warning: #fbbf24;
+  --status-active: #c084fc;
+  --status-info: #60a5fa;
+  --agent-batman: #a78bfa;
+  --agent-brainiac: #a78bfa;
+  --agent-martian-manhunter: #34d399;
+  --agent-cyborg: #60a5fa;
+  --agent-wonder-woman: #f472b6;
+  --agent-flash: #fbbf24;
+  --agent-green-lantern: #4ade80;
+  --agent-lois-lane: #f9a8d4;
+  --agent-oracle: #c084fc;
+  --font-mono: 'Space Mono', monospace;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 20px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 16px; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
