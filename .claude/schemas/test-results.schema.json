@@ -34,6 +34,65 @@
         "output": { "type": "string", "description": "Raw test runner output" }
       }
     },
+    "coverage_matrix": {
+      "type": "object",
+      "description": "Maps plan artifacts to test coverage",
+      "properties": {
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["criterion", "test_names"],
+            "properties": {
+              "criterion": { "type": "string", "description": "The acceptance criterion text from plan.json" },
+              "test_names": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Test names that cover this criterion"
+              }
+            }
+          },
+          "description": "Every acceptance criterion and which tests cover it"
+        },
+        "user_journeys": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["journey", "test_names"],
+            "properties": {
+              "journey": { "type": "string", "description": "The user journey being tested" },
+              "test_names": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "E2E test names that cover this journey"
+              }
+            }
+          },
+          "description": "User journeys from product-thinking and their E2E test coverage"
+        },
+        "edge_cases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["edge_case", "test_names"],
+            "properties": {
+              "edge_case": { "type": "string", "description": "The edge case from plan.json task" },
+              "test_names": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Tests that cover this edge case"
+              }
+            }
+          },
+          "description": "Edge cases from plan tasks and their test coverage"
+        },
+        "uncovered": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Criteria, journeys, or edge cases with no test coverage"
+        }
+      }
+    },
     "coverage_gaps": {
       "type": "array",
       "items": { "type": "string" },
