@@ -5,7 +5,7 @@ description: >
   standards. Cannot modify code. Produces structured review verdicts.
 tools: Read, Glob, Grep, Write
 model: opus
-skills: review-criteria, database-patterns, frontend-patterns
+skills: review-criteria, architectural-principles, database-patterns, frontend-patterns
 effort: high
 ---
 

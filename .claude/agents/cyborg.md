@@ -5,7 +5,7 @@ description: >
   Follows existing codebase patterns exactly.
 tools: Read, Write, Edit, Bash
 model: sonnet
-skills: implementation-standards, database-patterns, frontend-patterns
+skills: implementation-standards, architectural-principles, database-patterns, frontend-patterns
 effort: high
 ---
 
