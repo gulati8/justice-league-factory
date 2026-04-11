@@ -6,6 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from dashboard_api.routes.runs import create_router as runs_router
+from dashboard_api.routes.agents import create_router as agents_router
+from dashboard_api.routes.events import create_router as events_router
 
 
 def create_app(db_path: str | None = None) -> FastAPI:
@@ -26,6 +28,8 @@ def create_app(db_path: str | None = None) -> FastAPI:
     )
 
     app.include_router(runs_router(db_path))
+    app.include_router(agents_router(db_path))
+    app.include_router(events_router(db_path))
 
     @app.get("/api/health")
     def health():
