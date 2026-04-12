@@ -18,37 +18,9 @@ project. The project uses PostgreSQL with raw SQL (no ORM), standalone migration
 scripts in `backend/src/db/`, Zod for request validation, and TypeScript
 interfaces for data types.
 
-## Why Migrations — Not Aliases — Are the Only Correct Path
+## Migration-First Principles
 
-When a field needs to be renamed or added, the tempting shortcut is to handle it
-in the application layer: alias the column in SQL, map the name in the API, or
-translate it in the frontend. This feels fast, but it creates a split reality.
-The database column still has the old name. Every developer reading the code,
-every index, every backup, every query debugged under production load — all of
-them reference a name that doesn't match what the application calls it. The
-mismatch compounds over time: new developers learn the wrong mental model, future
-migrations have to work around the alias, and debugging becomes archaeology.
-
-The correct approach is to rename the column in the database and update every
-reference in one coordinated change. The stack then speaks a single language at
-every layer.
-
-Here is the pattern that was done wrong with `special_instructions`, and how it
-should have been done:
-
-```sql
--- Wrong: aliasing a column to avoid a migration
-SELECT special_instructions AS owners_notes FROM pets
-```
-
-```sql
--- Right: a migration that renames the column so the DB matches the application
-ALTER TABLE pets RENAME COLUMN special_instructions TO owners_notes;
-```
-
-After the migration, every TypeScript interface, Zod schema, SQL query, API
-shape, and frontend component is updated to use `owners_notes`. The old name
-disappears from the codebase entirely.
+Migration-first principles are defined in architectural-principles. This skill covers the mechanics: file naming, templates, schema change patterns, and the full-stack checklist.
 
 ## Migration File Conventions
 

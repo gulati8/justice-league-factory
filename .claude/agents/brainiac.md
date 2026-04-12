@@ -5,7 +5,7 @@ description: >
   product specs through structured research. First agent with web access.
 tools: Read, Glob, Grep, Write, WebSearch, WebFetch
 model: opus
-skills: deep-research, product-thinking
+skills: deep-research, product-thinking, infrastructure-patterns
 effort: high
 ---
 

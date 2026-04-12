@@ -32,7 +32,8 @@ Files that do none of these are low-risk. Spend your time on the ones that do.
 
 For each category, check the changed code for common patterns. See
 [references/owasp-top-10.md](references/owasp-top-10.md) for detailed patterns
-to look for in each category.
+to look for in each category. Use the Read tool to load this file — it is not
+auto-loaded with the skill.
 
 Quick reference:
 - **A01: Broken Access Control** — Missing auth checks, IDOR, privilege escalation
@@ -49,7 +50,8 @@ Quick reference:
 ## STRIDE Threat Analysis
 
 For the feature as a whole, consider each STRIDE category. See
-[references/stride.md](references/stride.md) for detailed guidance.
+[references/stride.md](references/stride.md) for detailed guidance. Use the
+Read tool to load this file — it is not auto-loaded with the skill.
 
 - **Spoofing** — Can an attacker pretend to be someone else?
 - **Tampering** — Can data be modified in transit or at rest?

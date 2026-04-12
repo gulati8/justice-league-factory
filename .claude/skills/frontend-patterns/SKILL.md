@@ -231,83 +231,25 @@ copy has to be found and updated. The project already handles this well with
 Every modal in the project follows this structure:
 
 ```tsx
-<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-  <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-    <div className="p-6">
-      {/* Header with title and close button */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Modal Title</h2>
-        <button onClick={onClose} className="text-surface-400 hover:text-surface-600">
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Content */}
-      ...
-
-      {/* Actions */}
-      <div className="flex justify-end space-x-3 pt-4">
-        <button onClick={onClose} className="btn-secondary">Cancel</button>
-        <button className="btn-primary">Confirm</button>
-      </div>
-    </div>
-  </div>
-</div>
+{/* backdrop: fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 */}
+  {/* card: bg-white rounded-xl max-w-{size} w-full max-h-[90vh] overflow-y-auto */}
+    {/* header: flex justify-between items-center — title + close button */}
+    {/* content */}
+    {/* actions: flex justify-end space-x-3 — btn-secondary cancel + btn-primary confirm */}
 ```
 
-Real examples: `AddPetModal.tsx`, `ShareModal.tsx`, `CardAlertsModal.tsx`.
-
-The backdrop (`fixed inset-0 bg-black bg-opacity-50 ... z-50`), the card
-(`bg-white rounded-xl max-w-{size} w-full`), the close button SVG, and the
-action button classes are all consistent across every modal. Copy this structure
-exactly rather than improvising — consistency is what makes the app feel like a
-single product. Max width varies: `max-w-md` for forms, `max-w-lg` for
-content-heavy modals.
+Max width: `max-w-md` for forms, `max-w-lg` for content-heavy modals. See
+`AddPetModal.tsx`, `ShareModal.tsx`, or `CardAlertsModal.tsx` for complete examples.
 
 ### Tab Pattern
 
-Tabs within the pet profile follow this established pattern (see `AllergiesTab`,
-`ConditionsTab`, `VaccinationsTab`):
+Tabs follow an established shape: state (`showForm`, `editingId`, `deletingId`) +
+CRUD handlers + a header row (title + "Add" button) + conditional `InlineEditForm`
+for add/edit + empty state paragraph + `divide-y` list of items. `InlineEditForm`
+handles both add and edit — it is not duplicated. Field definitions live in
+`constants.ts`, not inline.
 
-```tsx
-export default function SomeTab({ petId, token, items, setItems }: Props) {
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-
-  // CRUD handlers...
-
-  return (
-    <div>
-      {/* Header with title and add button */}
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Tab Title</h3>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary text-sm">
-          + Add Item
-        </button>
-      </div>
-
-      {/* Add form (InlineEditForm) */}
-      {showForm && <InlineEditForm ... />}
-
-      {/* Empty state */}
-      {items.length === 0 ? (
-        <p className="text-surface-500 text-center py-8">No items recorded</p>
-      ) : (
-        <ul className="divide-y">
-          {items.map(item => (
-            <li key={item.id} className="py-3">
-              {/* Inline edit or display */}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-```
+See `AllergiesTab.tsx`, `ConditionsTab.tsx`, or `VaccinationsTab.tsx` for complete examples.
 
 Key details:
 - State is lifted: the tab receives `items` and `setItems` from the parent

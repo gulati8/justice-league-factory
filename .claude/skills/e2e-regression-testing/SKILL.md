@@ -10,6 +10,8 @@ description: >
   exploration via Playwright MCP tools, Page Object Model architecture,
   multi-viewport testing (375px / 768px / 1280px), measurable coverage
   thresholds, and output artifact production.
+user-invocable: false
+disable-model-invocation: true
 ---
 
 # E2E Regression Testing
@@ -88,21 +90,6 @@ needed to write accurate tests.
 Confirm the app is running before starting: `browser_navigate` to the base URL
 and verify a valid page load.
 
-### MCP Tool Reference
-
-| Tool | Purpose in Discovery |
-|------|---------------------|
-| `browser_navigate` | Visit each discovered route |
-| `browser_snapshot` | Capture accessibility tree — use this to find reliable selectors |
-| `browser_click` | Exercise interactive elements, observe state changes |
-| `browser_type` | Fill forms to observe validation behavior |
-| `browser_resize` | Check responsive layout at 375px, 768px, 1280px |
-| `browser_network_requests` | Record API calls on page load and on interaction |
-| `browser_console_messages` | Detect JS errors and failed requests |
-| `browser_evaluate` | Assert against page state (localStorage, cookie values) |
-| `browser_take_screenshot` | Capture visual baselines at each breakpoint |
-| `browser_route` | Mock API responses (401, 404, 500) to observe error state rendering |
-
 ### Exploration Protocol
 
 For every discovered route:
@@ -171,27 +158,8 @@ export class BasePage {
     await expect(this.page).toHaveURL(pattern);
   }
 }
-```
-
-### Example Page Object (`tests/e2e/pages/LoginPage.ts`)
-
-```typescript
-import { type Page, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
-
-export class LoginPage extends BasePage {
-  async goto() { await super.goto('/login'); }
-
-  async login(email: string, password: string) {
-    await this.page.getByLabel('Email').fill(email);
-    await this.page.getByLabel('Password').fill(password);
-    await this.page.getByRole('button', { name: 'Log in' }).click();
-  }
-
-  async expectError(message: string) {
-    await expect(this.page.getByRole('alert')).toContainText(message);
-  }
-}
+// Follow this pattern for page-specific classes like LoginPage, DashboardPage, etc.
+// Each extends BasePage and adds page-specific goto(), action helpers, and assertion helpers.
 ```
 
 Naming: `*.spec.ts` for test files, `*Page.ts` (PascalCase) for page objects.

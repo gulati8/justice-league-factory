@@ -154,17 +154,3 @@ everybody.
 bugs. If you catch an error, either handle it meaningfully, re-throw it, or
 log it. Empty catch blocks are never acceptable.
 
-## How Each Agent Applies These Principles
-
-**Martian Manhunter (planning):** Use SOLID for task decomposition. Use 12-factor
-to ensure config is externalized in the plan. Use defensive design to include
-edge cases in acceptance criteria. Use migration-first to include migration tasks
-for schema changes.
-
-**Cyborg (implementation):** Follow all principles during coding. When the plan
-doesn't specify how to handle something, default to these principles. Note any
-principle-based decisions in your briefing under `notes_for_reviewer`.
-
-**Wonder Woman (review):** Flag violations of these principles using the
-appropriate severity. Migration-first violations are critical. Config-over-
-hardcoding violations are warnings. KISS violations (over-engineering) are info.

@@ -61,6 +61,19 @@ If the change affects end users:
    but the implementation uses Y."
 4. Test any commands or instructions you document if possible
 
+## Placement and Structure
+
+When a project has both README.md and a docs/ directory: API docs and guides go
+in docs/. README covers setup, quickstart, and links to docs/.
+
+CHANGELOG.md: update for user-facing changes. Follow Keep a Changelog format —
+sections are Added, Changed, Deprecated, Removed, Fixed, Security. Unreleased
+changes go under `## [Unreleased]`.
+
+Breaking changes: document in both CHANGELOG and the relevant API or migration
+docs. Call out explicitly what breaks and what the migration path is. A breaking
+change documented only in one place will be missed.
+
 ## What NOT to Document
 
 - Internal implementation details that don't affect users or developers

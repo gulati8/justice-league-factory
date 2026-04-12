@@ -85,10 +85,10 @@ already know. When sources start repeating the same information, you have
 reached saturation — stop searching and move on. Do not pad the survey with
 sources that add nothing new.
 
-**What to read in detail.** Use WebSearch to find candidates. Use WebFetch to
-read the full content of the most relevant pages — product landing pages,
-comparison articles, GitHub READMEs, technical blog posts. Do not rely on
-search snippet summaries alone. Snippets omit the nuance that matters.
+**What to read in detail.** Find candidates via search, then fetch the full
+content of the most relevant pages — product landing pages, comparison articles,
+GitHub READMEs, technical blog posts. Do not rely on search snippet summaries
+alone. Snippets omit the nuance that matters.
 
 **What to produce.** At the end of Phase 2, write a structured summary:
 
@@ -111,50 +111,15 @@ The best idea in the world fails if it collides with a constraint that was
 never surfaced. This phase systematically enumerates constraints across four
 dimensions before any solution shape is proposed.
 
-**Technical constraints.** Use Read, Glob, and Grep to inspect the existing
-codebase. You are looking for:
+### Constraint Dimensions
 
-- What languages, frameworks, and libraries are already in use? The solution
-  must be compatible, not introduce a third framework into a two-framework
-  codebase.
-- What are the data model boundaries? What entities already exist, and what
-  would need to change to support the new feature?
-- What external services are already integrated? What APIs, auth providers,
-  storage backends, queues?
-- What are the performance envelopes? Are there latency budgets, memory
-  limits, or throughput requirements that constrain implementation choices?
-- What is the deployment model? Serverless functions have different constraints
-  than long-running containers.
+- **Technical** — Use Read, Glob, and Grep to inspect the codebase. What languages, frameworks, and libraries are in use? What are the data model boundaries? What external services are already integrated? What are the performance envelopes (latency budgets, memory limits, throughput)? What is the deployment model? A technical constraint is a hard limit — something the codebase or infrastructure cannot do without significant additional work. "Significant additional work" is itself a constraint: if adding a capability requires three additional tasks, that must be reflected in scope.
 
-A technical constraint is a hard limit — something the codebase or
-infrastructure cannot do without significant additional work. Note that
-"significant additional work" is itself a constraint: if adding a capability
-requires three additional tasks, that must be reflected in the scope.
+- **Business** — These come from context, not the codebase. Ask explicitly if not provided: Is there a deadline, product milestone, or customer commitment? Are there cost ceilings on infrastructure or third-party services? Are there regulatory requirements (GDPR, SOC 2, HIPAA)? Are there open-source license constraints?
 
-**Business constraints.** These come from context, not the codebase. Ask
-explicitly if not provided:
+- **User** — Who are the primary users and what is their technical sophistication? What devices, browsers, or environments do they use? Are there accessibility requirements (WCAG, screen reader support)? Internationalization or localization requirements? What is the cost of retraining users with existing workflows?
 
-- Timeline: Is there a deadline? A product milestone? A customer commitment?
-- Budget: Are there cost ceilings on infrastructure or third-party services?
-- Compliance: Are there regulatory requirements (GDPR, SOC 2, HIPAA) that
-  govern how data is stored, accessed, or deleted?
-- Licensing: Are there open-source license constraints on what can be included?
-
-**User constraints.** Who uses this? What are their expectations and
-limitations?
-
-- Who are the primary users? What is their technical sophistication?
-- What devices, browsers, or environments do they use?
-- Are there accessibility requirements (WCAG compliance, screen reader support)?
-- Are there internationalization or localization requirements?
-- What is the cost of retraining users who have existing workflows?
-
-**Scope constraints.** What is explicitly out of bounds, either stated by the
-requester or implied by the context?
-
-- What adjacent problems are similar but should not be solved here?
-- What future capabilities are "phase 2" and must not bleed into this spec?
-- What existing functionality must not be broken or regressed?
+- **Scope** — What is explicitly out of bounds? What adjacent problems are similar but should not be solved here? What future capabilities are "phase 2" and must not bleed into this spec? What existing functionality must not be broken?
 
 Write out all constraints before moving to Phase 4. If constraints are
 incomplete and you cannot fill them from the codebase or context, list them as
@@ -249,8 +214,7 @@ actually have.
 
 **Unknown unknowns: What don't we know we don't know?**
 
-This is the hardest category because by definition you cannot enumerate what
-you haven't discovered. Instead, apply a structured probe:
+Apply a structured probe:
 
 - What would a senior engineer with 10 years in this domain know that you
   haven't surfaced yet? What questions would they ask?
@@ -260,8 +224,8 @@ you haven't discovered. Instead, apply a structured probe:
 - What happens when the external dependency this feature relies on goes down,
   returns unexpected data, or changes its API?
 
-Document the unknown unknowns as questions, not risks. "We do not know how
-existing sessions are invalidated when a user changes their email. This needs
+Document unknown unknowns as questions, not risks. "We do not know how existing
+sessions are invalidated when a user changes their email. This needs
 investigation before implementation." That is a useful unknown. "There may be
 things we don't know" is not.
 

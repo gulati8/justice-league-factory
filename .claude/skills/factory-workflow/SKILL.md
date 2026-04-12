@@ -84,7 +84,7 @@ you don't need to repeat them.
 - **Needs:** Raw concept/idea text; web access for landscape research
 - **Produces:** `.factory-run/research-brief.md`, `.factory-run/feature-request.json`
 - **Tools:** Read, Glob, Grep, Write, WebSearch, WebFetch
-- **Skills:** deep-research, product-thinking
+- **Skills:** deep-research, product-thinking, infrastructure-patterns
 - **Key behavior:** Researches abstract concepts through six phases. Now also
   applies product-thinking: user journey mapping, edge case enumeration, and
   notification flow analysis. First agent with web access.
@@ -94,7 +94,7 @@ you don't need to repeat them.
 - **Needs:** Feature request text + access to the project codebase
 - **Produces:** `.factory-run/plan.json` + `.factory-run/architecture.md`
 - **Tools:** Read, Glob, Grep, Write (read-heavy, write-only for artifacts)
-- **Skills:** planning-methodology, product-thinking, architectural-principles, database-patterns, frontend-patterns
+- **Skills:** planning-methodology, product-thinking, architectural-principles, database-patterns, frontend-patterns, infrastructure-patterns
 - **Key behavior:** Decomposes features into tasks with definition-of-done fields
   (user_impact, edge_cases, rollback_strategy) and testable acceptance criteria.
   Applies architectural-principles for sound engineering decisions. Applies
@@ -147,8 +147,10 @@ you don't need to repeat them.
 - **Needs:** `eval/factory.db` (telemetry) + agent definitions + skill files
 - **Produces:** `.factory-run/improvements.json` + PR
 - **Tools:** Read, Glob, Grep, Write, Bash
-- **Key behavior:** Analyzes telemetry across runs. Not dispatched during normal
-  factory runs — run separately.
+- **Skills:** improvement-methodology, skill-review
+- **Key behavior:** Analyzes telemetry across runs for improvement proposals (run
+  separately). Also dispatched during factory runs for skill-review when a new
+  skill or skill modification is the deliverable.
 
 ## Multi-Phase Dispatch Sequence
 
@@ -171,6 +173,26 @@ flows in the research brief.
 
 **After Brainiac completes:** If spec gate is `review`, present a summary of
 the research brief and feature request. Wait for approval.
+
+**Architectural spot-check (conditional).** If Brainiac's feature-request.json
+contains technology selections, infrastructure decisions, or data model
+proposals, dispatch Martian Manhunter in review mode before presenting to the
+user at the spec gate:
+
+> "Review .factory-run/feature-request.json and .factory-run/research-brief.md
+> against the codebase at {project_path} and your architectural-principles and
+> infrastructure-patterns skills. You are NOT planning yet — do not produce
+> plan.json. Flag only hard architectural conflicts: existing pattern violations,
+> infrastructure incompatibilities, data model concerns, or technical
+> infeasibility. Return a brief assessment to Batman.
+> Factory run ID: {factory_run_id}"
+
+If MM raises concerns, present them alongside Brainiac's output at the spec
+gate. The user decides whether to send Brainiac back for revision, override,
+or proceed as-is.
+
+If Brainiac's output is purely market research, problem validation, or scope
+definition without technical prescription, skip this step.
 
 ### Phase 2: Planning
 
@@ -272,8 +294,21 @@ When a quality gate agent returns a "fail" verdict:
 
 Skill and agent creation tasks follow a different sequence — see the
 planning-methodology skill's "When the Feature Is a New Skill or Agent" section.
-The key difference: skill content is crafted interactively using skill-creator,
-then Batman dispatches Martian Manhunter to plan the factory integration.
+
+1. Skill content is crafted interactively using skill-creator
+2. Batman dispatches Oracle for skill-review (quality gate on the draft)
+3. If Oracle passes the skill, Batman dispatches Martian Manhunter to plan
+   the factory integration
+4. Normal pipeline resumes from Phase 2 (Planning)
+
+**Oracle skill-review prompt template:**
+> "Review the skill at {skill_path} for quality. Read all co-loaded skills for
+> the agents that will consume this skill (check their frontmatter). Evaluate
+> against the skill-review rubric: format compliance, scope clarity,
+> actionability, completeness, token efficiency, prescriptive voice, and
+> negative guidance. Then run the cross-skill coherence analysis: overlap,
+> contradictions, reference integrity, and context budget impact. Return your
+> assessment to Batman. Factory run ID: {factory_run_id}"
 
 ## Compiling Results
 
@@ -294,4 +329,5 @@ Docs: [complete/skipped]
 ```
 
 For detailed artifact contracts and schema definitions, see
-[references/artifact-contracts.md](references/artifact-contracts.md).
+[references/artifact-contracts.md](references/artifact-contracts.md). Use the
+Read tool to load this file — it is not auto-loaded with the skill.
