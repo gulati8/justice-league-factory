@@ -77,6 +77,58 @@ file the task creates or modifies.
 - When in doubt, make tasks sequential — incorrect parallelization causes
   merge conflicts
 
+## Schema Change Planning
+
+Migrations are not scary — they are the correct, reversible, auditable way to
+evolve a schema. Never plan code workarounds for schema changes (field mappings,
+SQL aliases, computed columns, application-level transforms). Always plan for a
+migration.
+
+When a task involves a database schema change, the task's `files` array must
+include every layer affected. Use this checklist — skipping any item creates the
+kind of name mismatch or runtime failure that is expensive to debug:
+
+1. **Migration file** — `backend/src/db/migrate-{slug}.ts`
+2. **npm scripts** — both `db:migrate:{slug}` and `db:migrate:{slug}:dev`
+3. **TypeScript model interface** — `backend/src/models/{entity}.ts`
+4. **SQL queries in model** — every SELECT, INSERT, UPDATE referencing the field
+5. **Zod validation schema** — `backend/src/routes/{entity}.ts`
+6. **Allowed fields list** — the `allowedFields` array in update functions
+7. **Seed data** — `backend/src/db/seed.ts` if the field is seeded
+8. **Frontend API types** — `frontend/src/api/client.ts`
+9. **Frontend components** — every component that reads or writes the field
+10. **E2E tests** — page objects, fixture data, and test specs
+11. **Base schema DDL** — `backend/src/db/migrate.ts` for fresh installs
+
+For rollback strategies on schema tasks: column renames reverse with
+`RENAME COLUMN`; column additions reverse with `DROP COLUMN`; for destructive
+migrations (dropping columns, transforming data), document the backup-and-restore
+step explicitly.
+
+Cyborg and Wonder Woman load the full database-patterns skill for SQL templates,
+migration file structure, and implementation details.
+
+## Frontend Task Planning
+
+When a task involves frontend changes, the task's `files` array must reference
+the correct locations in the project's component hierarchy:
+
+- **Shared components** (`frontend/src/components/`) — UI patterns used across
+  multiple pages: modals, form inputs, avatars, date pickers. If a pattern is
+  used in two or more places, it belongs here.
+- **Page-specific components** (`frontend/src/pages/{page}/`) — components,
+  sections, and tabs specific to one page feature. Tabs live in a `tabs/`
+  subdirectory, sections in `sections/`.
+- **Field definitions** (`frontend/src/pages/{page}/constants.ts`) — form field
+  definitions, select options, and shared config for a page. Never inline field
+  definitions in component JSX.
+- **API types** (`frontend/src/api/client.ts`) — ALL TypeScript types for API
+  data live here. When a task adds a new data entity or field, `client.ts` must
+  be in the file list. No inline type definitions for API data in components.
+
+Cyborg and Wonder Woman load the full frontend-patterns skill for styling
+conventions, theme tokens, and component implementation details.
+
 ## Architecture Document
 
 Your `architecture.md` should give Cyborg and Wonder Woman enough context to
