@@ -94,7 +94,7 @@ you don't need to repeat them.
 - **Needs:** Feature request text + access to the project codebase
 - **Produces:** `.factory-run/plan.json` + `.factory-run/architecture.md`
 - **Tools:** Read, Glob, Grep, Write (read-heavy, write-only for artifacts)
-- **Skills:** planning-methodology, product-thinking, architectural-principles, database-patterns, frontend-patterns, infrastructure-patterns
+- **Skills:** planning-methodology, product-thinking, architectural-principles, infrastructure-patterns
 - **Key behavior:** Decomposes features into tasks with definition-of-done fields
   (user_impact, edge_cases, rollback_strategy) and testable acceptance criteria.
   Applies architectural-principles for sound engineering decisions. Applies
