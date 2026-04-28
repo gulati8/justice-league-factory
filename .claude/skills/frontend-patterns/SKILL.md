@@ -8,6 +8,7 @@ description: >
   code change. Also activate when a new backend field needs frontend consumption.
 user-invocable: false
 disable-model-invocation: true
+last_reviewed: 2026-04-28
 ---
 
 # Frontend Patterns

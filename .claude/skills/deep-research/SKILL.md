@@ -7,6 +7,7 @@ description: >
   Can be invoked directly by users or injected into Brainiac's context.
 user-invocable: true
 disable-model-invocation: true
+last_reviewed: 2026-04-28
 ---
 
 # Deep Research

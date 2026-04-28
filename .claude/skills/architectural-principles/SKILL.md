@@ -6,6 +6,7 @@ description: >
   and defensive design. Referenced by Martian Manhunter, Cyborg, and Wonder Woman.
 user-invocable: false
 disable-model-invocation: true
+last_reviewed: 2026-04-28
 ---
 
 # Architectural Principles

@@ -5,6 +5,7 @@ description: >
   accuracy-first principles. Injected into Lois Lane's context.
 user-invocable: false
 disable-model-invocation: true
+last_reviewed: 2026-04-28
 ---
 
 # Documentation Standards

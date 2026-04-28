@@ -6,6 +6,7 @@ description: >
   and failure handling. Injected into Batman's context — not user-invocable.
 user-invocable: false
 disable-model-invocation: true
+last_reviewed: 2026-04-28
 ---
 
 # Factory Workflow

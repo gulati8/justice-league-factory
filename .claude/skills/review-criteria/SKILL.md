@@ -6,6 +6,7 @@ description: >
   test coverage matrix checks. Injected into Wonder Woman's context.
 user-invocable: false
 disable-model-invocation: true
+last_reviewed: 2026-04-28
 ---
 
 # Review Criteria
@@ -146,6 +147,26 @@ In addition to the above, you MUST flag the following as the specified severity:
 - Field definitions inline in components instead of in `constants.ts` — INFO
 - API types defined outside `frontend/src/api/client.ts` — WARNING
 - Duplicated UI patterns across tabs instead of shared components — WARNING
+
+## Free Exploration Pass
+
+After working through the structured checks above, do one final unconstrained
+pass. Re-read the changed code with fresh eyes and ask: what would a careful
+senior engineer notice that no checklist captures?
+
+- Real bugs: logic errors, off-by-one, wrong condition, swapped arguments,
+  race conditions, resource leaks
+- Cross-cutting issues: type drift between layers, contract mismatch between
+  Cyborg's output and the architecture doc, inconsistent error shapes
+- Wiring and configuration: a route added but not registered, an env var read
+  but not declared, a migration written but not invoked
+- Anything that would make a reviewer say "wait, that's not right"
+
+The structured categories are a floor, not a ceiling. Some of the most
+important findings are the ones no checklist anticipated. Spend a minute here
+even when the structured verdict is clean — surface anything notable as
+warning or info. If this pass changes the verdict (e.g., you find a logic bug
+the checklist missed), update it before writing review.json.
 
 ## Review Schema Reference
 

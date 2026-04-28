@@ -7,6 +7,7 @@ description: >
   real users, not just technical correctness.
 user-invocable: false
 disable-model-invocation: true
+last_reviewed: 2026-04-28
 ---
 
 # Product Thinking
