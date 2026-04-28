@@ -10,6 +10,7 @@ Usage: cat event.json | python3 log-telemetry.py /path/to/project
 
 import json
 import os
+import re
 import sqlite3
 import sys
 from datetime import datetime, timezone
@@ -33,6 +34,32 @@ def get_schema_path() -> str:
     """Schema lives in the factory repo, not the target project."""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(script_dir, "..", "..", "eval", "init-db.sql")
+
+
+def get_agent_skills(agent_type: str) -> list:
+    """Read .claude/agents/<agent>.md frontmatter, return its skills list.
+
+    Agent frontmatter uses an inline comma-separated skills line:
+      skills: review-criteria, architectural-principles, ...
+    """
+    if not agent_type:
+        return []
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    agent_path = os.path.join(script_dir, "..", "agents", f"{agent_type}.md")
+    if not os.path.isfile(agent_path):
+        return []
+    try:
+        with open(agent_path, "r") as f:
+            content = f.read()
+    except OSError:
+        return []
+    match = re.match(r"---\n(.*?)\n---", content, re.DOTALL)
+    if not match:
+        return []
+    skills_line = re.search(r"^skills:\s*(.+)$", match.group(1), re.MULTILINE)
+    if not skills_line:
+        return []
+    return [s.strip() for s in skills_line.group(1).split(",") if s.strip()]
 
 
 def init_db(db_path: str, schema_path: str) -> sqlite3.Connection:
@@ -146,14 +173,16 @@ def log_agent_run(conn: sqlite3.Connection, event: dict) -> int | None:
         cache_creation_tokens=transcript["cache_creation_tokens"],
     )
 
+    skills_loaded = get_agent_skills(agent)
+
     cursor = conn.execute(
         """INSERT INTO agent_runs (
             run_id, agent, model, started_at, completed_at,
             duration_ms, input_tokens, output_tokens,
             cache_read_tokens, cache_creation_tokens,
             verdict, retry_count, artifacts_produced,
-            phase, cost_usd
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            phase, cost_usd, skills_loaded
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             event.get("session_id"),
             agent,
@@ -172,6 +201,7 @@ def log_agent_run(conn: sqlite3.Connection, event: dict) -> int | None:
             else None,
             event.get("phase"),
             cost,
+            json.dumps(skills_loaded) if skills_loaded else None,
         ),
     )
     conn.commit()
