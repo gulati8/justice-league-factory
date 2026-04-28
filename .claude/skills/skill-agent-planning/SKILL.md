@@ -7,6 +7,7 @@ description: >
   involves creating a new skill or agent.
 user-invocable: false
 disable-model-invocation: true
+last_reviewed: 2026-04-28
 ---
 
 # Skill and Agent Planning

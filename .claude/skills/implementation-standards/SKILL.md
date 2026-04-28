@@ -5,6 +5,7 @@ description: >
   verification steps, pattern-following guidance. Injected into Cyborg's context.
 user-invocable: false
 disable-model-invocation: true
+last_reviewed: 2026-04-28
 ---
 
 # Implementation Standards

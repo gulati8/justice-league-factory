@@ -12,6 +12,7 @@ description: >
   thresholds, and output artifact production.
 user-invocable: false
 disable-model-invocation: true
+last_reviewed: 2026-04-28
 ---
 
 # E2E Regression Testing
