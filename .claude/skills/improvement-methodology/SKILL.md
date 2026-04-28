@@ -83,6 +83,78 @@ When metrics show a pattern, read the transcripts to understand WHY:
 - Was the issue in the prompt, the skill, or the task itself?
 - Would a prompt change fix it, or is this a fundamental limitation?
 
+## Bumping last_reviewed When You Modify a Skill
+
+Every skill carries a `last_reviewed: YYYY-MM-DD` field in frontmatter. When
+your improvements.json proposes changing a skill, the `proposed_value` MUST
+also update `last_reviewed` to today's date. This is non-negotiable: without
+the bump, the field stops tracking validation cadence and decays into noise
+within a few cycles.
+
+If a proposal modifies skill text but leaves `last_reviewed` unchanged, the
+proposal is incomplete. Wonder Woman should reject the resulting PR.
+
+## Skill Attribution
+
+Skills are loaded statically per agent through `.claude/agents/<name>.md`
+frontmatter (`skills:` line, comma-separated). To attribute a run's outcome
+to the skills that shaped it, two paths are available:
+
+**1. From the `skills_loaded` column (preferred when present):**
+The telemetry hook records the skills active at the time of each agent run.
+
+```sql
+SELECT agent, skills_loaded FROM agent_runs WHERE id = ?;
+```
+
+**2. From current agent frontmatter (fallback):**
+Read `.claude/agents/<agent_name>.md`, extract the `skills:` line, split on
+commas. Use this when analyzing runs older than the column's introduction or
+when validating recent changes against the latest config.
+
+## Staleness as Evidence Weight
+
+`last_reviewed` is a prior on improvement priority, not a signal on its own.
+Combine staleness with metrics before proposing:
+
+| Skill state | Metrics on agents that load it | Action |
+|---|---|---|
+| Stale (>90d), high failure rate | Two signals agreeing | Propose change — high priority |
+| Stale (>90d), healthy metrics | Don't fix what isn't broken | No proposal — staleness alone isn't evidence |
+| Recent (<14d edit), high failure rate | Edit hasn't soaked yet | Wait one or two more runs before re-proposing |
+| Recent (<14d edit), healthy metrics | Working as intended | No proposal |
+
+Compute staleness from `last_reviewed` first. If the field is missing or you
+suspect a recent edit didn't bump it:
+
+```bash
+git log -1 --format=%ai -- .claude/skills/<name>/SKILL.md
+```
+
+## Skill Health Pass
+
+Before producing improvements.json, build a per-skill health snapshot:
+
+```sql
+SELECT
+  json_each.value AS skill,
+  COUNT(*)        AS runs,
+  SUM(CASE WHEN verdict='fail' THEN 1 ELSE 0 END) AS fails,
+  MAX(started_at) AS last_run
+FROM agent_runs, json_each(agent_runs.skills_loaded)
+WHERE skills_loaded IS NOT NULL
+GROUP BY skill;
+```
+
+(SQLite ships `json_each` since 3.38. If `skills_loaded` is unavailable for a
+given run, fall back to grouping by agent and joining via current frontmatter.)
+
+For each skill, join the resulting rate with its `last_reviewed` and emit a
+`skill_health` entry in improvements.json. Sort by
+`(staleness_days × failure_rate)` descending — the top of that list is where
+to focus next analysis cycle. A skill's appearance there does NOT itself
+constitute a proposal; it's a pointer to where to look harder.
+
 ## Risk Classification
 
 ### Safe (auto-apply to branch)
