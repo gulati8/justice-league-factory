@@ -23,7 +23,7 @@ software changes — then improve themselves over time.
 |-------|------|-------|--------|--------|
 | Batman | Orchestrator | Read, Write, Agent, Bash | factory-workflow | Coordinates all agents |
 | Brainiac | Deep Researcher | Read, Glob, Grep, Write, WebSearch, WebFetch | deep-research, product-thinking, infrastructure-patterns | .factory-run/research-brief.md + feature-request.json |
-| Martian Manhunter | Planner | Read, Glob, Grep, Write | planning-methodology, product-thinking, architectural-principles, infrastructure-patterns | .factory-run/plan.json + architecture.md |
+| Martian Manhunter | Planner | Read, Glob, Grep, Write | planning-methodology, product-thinking, architectural-principles, infrastructure-patterns, skill-agent-planning | .factory-run/plan.json + architecture.md |
 | Cyborg | Coder | Read, Write, Edit, Bash | implementation-standards, architectural-principles, database-patterns, frontend-patterns | Working code + briefings |
 | Wonder Woman | Reviewer | Read, Glob, Grep, Write | review-criteria, architectural-principles, database-patterns, frontend-patterns | .factory-run/review.json |
 | Flash | QA/Tester | Read, Write, Edit, Bash | testing-methodology, e2e-regression-testing | Tests + .factory-run/test-results.json |

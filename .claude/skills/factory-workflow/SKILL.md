@@ -85,16 +85,18 @@ you don't need to repeat them.
 - **Produces:** `.factory-run/research-brief.md`, `.factory-run/feature-request.json`
 - **Tools:** Read, Glob, Grep, Write, WebSearch, WebFetch
 - **Skills:** deep-research, product-thinking, infrastructure-patterns
-- **Key behavior:** Researches abstract concepts through six phases. Now also
-  applies product-thinking: user journey mapping, edge case enumeration, and
-  notification flow analysis. First agent with web access.
+- **Key behavior:** Researches abstract concepts through six phases. Applies
+  product-thinking for user journey mapping, edge case enumeration, and
+  notification flow analysis. Applies infrastructure-patterns for cost,
+  deployment, and vendor lock-in analysis during constraint discovery. First
+  agent with web access.
 
 ### Martian Manhunter — Architect/Planner
 
 - **Needs:** Feature request text + access to the project codebase
 - **Produces:** `.factory-run/plan.json` + `.factory-run/architecture.md`
 - **Tools:** Read, Glob, Grep, Write (read-heavy, write-only for artifacts)
-- **Skills:** planning-methodology, product-thinking, architectural-principles, infrastructure-patterns
+- **Skills:** planning-methodology, product-thinking, architectural-principles, infrastructure-patterns, skill-agent-planning
 - **Key behavior:** Decomposes features into tasks with definition-of-done fields
   (user_impact, edge_cases, rollback_strategy) and testable acceptance criteria.
   Applies architectural-principles for sound engineering decisions. Applies
@@ -293,7 +295,8 @@ When a quality gate agent returns a "fail" verdict:
 ## Skill/Agent Creation Dispatch
 
 Skill and agent creation tasks follow a different sequence — see the
-planning-methodology skill's "When the Feature Is a New Skill or Agent" section.
+skill-agent-planning skill for delivery vehicle decisions, validation strategy,
+and integration checklists.
 
 1. Skill content is crafted interactively using skill-creator
 2. Batman dispatches Oracle for skill-review (quality gate on the draft)

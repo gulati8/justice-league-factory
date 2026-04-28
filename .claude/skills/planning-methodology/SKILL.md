@@ -105,8 +105,9 @@ For rollback strategies on schema tasks: column renames reverse with
 migrations (dropping columns, transforming data), document the backup-and-restore
 step explicitly.
 
-Cyborg and Wonder Woman load the full database-patterns skill for SQL templates,
-migration file structure, and implementation details.
+The authoritative version of this checklist lives in the database-patterns
+skill. Cyborg and Wonder Woman load that skill for SQL templates, migration
+file structure, and implementation details.
 
 ## Frontend Task Planning
 
@@ -136,7 +137,9 @@ work without asking questions. Include:
 
 1. **Approach** — Why this design, not just what. What alternatives were considered?
 2. **Data flow** — How does data move through the system for this feature?
-3. **Existing patterns to follow** — Concrete references to files in the codebase
+3. **Component boundaries** — Where does this feature end and adjacent systems begin?
+4. **Interface definitions** — Data structures shared between tasks. Define them here so each Cyborg doesn't invent its own.
+5. **Existing patterns to follow** — Concrete references to files in the codebase
    that demonstrate the pattern Cyborg should replicate
 
 ## Plan Schema Reference
@@ -171,6 +174,10 @@ Your output must conform to `.claude/schemas/plan.schema.json`. Key fields:
 ```
 
 ### Definition-of-Done Fields (required on every task)
+
+These fields embed product-thinking into the plan structure. Populate
+`edge_cases` from the "what happens when..." analysis and `user_impact` from
+user journey mapping.
 
 **`user_impact`** — One sentence describing what this task enables for the end
 user. Not a technical description ("adds a database column") but a user outcome

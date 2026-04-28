@@ -133,34 +133,12 @@ tests/
 playwright.config.ts
 ```
 
-### Base Page Class (`tests/e2e/pages/BasePage.ts`)
+### Base Page Class
 
-```typescript
-import { type Page, expect } from '@playwright/test';
-
-export class BasePage {
-  readonly page: Page;
-
-  constructor(page: Page) {
-    this.page = page;
-  }
-
-  async goto(path: string): Promise<void> {
-    await this.page.goto(path);
-    await this.page.waitForLoadState('networkidle');
-  }
-
-  async expectHeading(text: string): Promise<void> {
-    await expect(this.page.getByRole('heading', { name: text })).toBeVisible();
-  }
-
-  async expectUrl(pattern: string | RegExp): Promise<void> {
-    await expect(this.page).toHaveURL(pattern);
-  }
-}
-// Follow this pattern for page-specific classes like LoginPage, DashboardPage, etc.
-// Each extends BasePage and adds page-specific goto(), action helpers, and assertion helpers.
-```
+Every page object extends `BasePage` with `goto()`, action helpers, and
+assertion helpers. See
+[references/test-patterns.md](references/test-patterns.md) for the full
+`BasePage` implementation. Use the Read tool to load it.
 
 Naming: `*.spec.ts` for test files, `*Page.ts` (PascalCase) for page objects.
 
@@ -201,40 +179,17 @@ These scripts enable CI pipelines and developers to run the suite independently 
 
 ## Phase 4: Playwright Configuration
 
-Create `playwright.config.ts` at the project root:
+Create `playwright.config.ts` at the project root. See
+[references/test-patterns.md](references/test-patterns.md) for the full config
+template. Use the Read tool to load it.
 
-```typescript
-import { defineConfig, devices } from '@playwright/test';
-
-export default defineConfig({
-  testDir: './tests/e2e',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
-  outputDir: './tmp/playwright/results',
-  reporter: [
-    ['html', { outputFolder: './tmp/playwright/report' }],
-    ['json', { outputFile: './tmp/playwright/results.json' }],
-  ],
-  use: {
-    baseURL: process.env.BASE_URL ?? 'http://localhost:3000',
-    screenshot: 'only-on-failure',
-    trace: 'on-first-retry',
-    video: 'retain-on-failure',
-  },
-  projects: [
-    { name: 'desktop-chrome', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 720 } } },
-    { name: 'mobile-chrome',  use: { ...devices['Pixel 7'] } },
-    { name: 'mobile-safari',  use: { ...devices['iPhone 15'] } },
-    { name: 'tablet',         use: { ...devices['iPad Pro 11'] } },
-  ],
-  globalSetup: './tests/e2e/utils/setup.ts',
-});
-```
-
-Retry count (2 CI / 0 local), both reporters, screenshot on failure, and trace
-on first retry are mandatory. Do not remove any of these.
+Mandatory config requirements — do not remove any of these:
+- `retries: 2` in CI, `0` locally
+- Both `html` and `json` reporters
+- `screenshot: 'only-on-failure'`
+- `trace: 'on-first-retry'`
+- Four projects: desktop-chrome (1280px), mobile-chrome, mobile-safari, tablet
+- `snapshotPathTemplate` consolidating snapshots under `tests/e2e/__snapshots__/`
 
 ### Artifact Hygiene
 
@@ -268,26 +223,9 @@ enforce this automatically for all `*.spec.ts` files.
 
 ### Responsive-Specific Tests
 
-Write dedicated tests for elements that transform across breakpoints:
-
-```typescript
-const viewports = [
-  { label: 'mobile', width: 375, height: 812 },
-  { label: 'desktop', width: 1280, height: 720 },
-];
-
-for (const vp of viewports) {
-  test(`nav is correct at ${vp.label}`, async ({ page }) => {
-    await page.setViewportSize({ width: vp.width, height: vp.height });
-    await page.goto('/');
-    if (vp.width < 768) {
-      await expect(page.getByRole('button', { name: /menu/i })).toBeVisible();
-    } else {
-      await expect(page.getByRole('navigation').getByRole('link').first()).toBeVisible();
-    }
-  });
-}
-```
+Write dedicated tests for elements that transform across breakpoints. Loop over
+a viewports array and assert different UI states at each size. See
+[references/test-patterns.md](references/test-patterns.md) for the pattern.
 
 Test explicitly: hamburger menus (hidden by default, opens on click, closes on
 ESC and backdrop), stacked layouts (no overflow), touch targets (minimum 44x44px
@@ -350,13 +288,9 @@ realistic data, pagination (if present — next/previous work, URL reflects page
 
 ### Cross-Feature User Journeys
 
-Write at minimum one test per major workflow spanning feature areas:
-
-```typescript
-test('new user can sign up and complete the core value action @critical', async ({ page }) => {
-  // signup → onboarding → create primary entity → verify in list → open detail
-});
-```
+Write at minimum one test per major workflow spanning feature areas (e.g.,
+signup → onboarding → core action → verify). See
+[references/test-patterns.md](references/test-patterns.md) for the pattern.
 
 ## Phase 7: Coverage Expectations
 
@@ -377,45 +311,17 @@ declaring the suite complete.
 
 ### Accessibility
 
-Install `@axe-core/playwright`. Add a scan to every page-level test:
-
-```typescript
-import AxeBuilder from '@axe-core/playwright';
-
-test('login page has no accessibility violations', async ({ page }) => {
-  await page.goto('/login');
-  const results = await new AxeBuilder({ page }).analyze();
-  expect(results.violations).toEqual([]);
-});
-```
+Install `@axe-core/playwright`. Add an axe scan to every page-level test. See
+[references/test-patterns.md](references/test-patterns.md) for the pattern.
 
 ### Visual Regression
 
-```typescript
-test('dashboard visual baseline - desktop', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto('/dashboard');
-  await expect(page).toHaveScreenshot('dashboard-desktop.png', { fullPage: true, threshold: 0.2 });
-});
-```
-
-Add these fields to `playwright.config.ts` to consolidate snapshots under
-`tests/e2e/__snapshots__/`:
-
-```typescript
-expect: {
-  toHaveScreenshot: {
-    maxDiffPixelRatio: 0.02,
-  },
-},
-snapshotPathTemplate: '{testDir}/__snapshots__/{testFilePath}/{arg}{ext}',
-```
-
-Snapshot baselines ARE committed to version control — they are reference images
-that document expected UI appearance. Only the ephemeral `tmp/playwright/`
-artifacts are excluded via `.gitignore`.
-
-Run with `--update-snapshots` on first pass to establish baselines.
+Use `toHaveScreenshot()` at each breakpoint. Snapshot baselines ARE committed
+to version control — they are reference images that document expected UI
+appearance. Only the ephemeral `tmp/playwright/` artifacts are excluded via
+`.gitignore`. Run with `--update-snapshots` on first pass to establish
+baselines. See [references/test-patterns.md](references/test-patterns.md) for
+the pattern and config fields.
 
 ### Coverage Audit Command
 
@@ -432,57 +338,18 @@ These are hard constraints. Fix violations before declaring the suite complete.
 
 ### No Arbitrary Waits
 
-`page.waitForTimeout()` is banned. If you think you need `waitForTimeout`, you
-need a better assertion. Playwright's auto-retry handles timing — you need to
-tell it WHAT to wait for, not HOW LONG.
-
-```typescript
-// Wrong — arbitrary wait for animation
-await page.waitForTimeout(400);
-await expect(page.getByText('Filtered results')).toBeVisible();
-
-// Right — wait for animation to complete via CSS
-await page.locator('.results').evaluate(el =>
-  el.getAnimations().length > 0
-    ? Promise.all(el.getAnimations().map(a => a.finished))
-    : Promise.resolve()
-);
-await expect(page.getByText('Filtered results')).toBeVisible();
-
-// Right — wait for network idle after triggering action
-await page.getByRole('combobox', { name: 'Filter' }).selectOption('happy-hour');
-await page.waitForLoadState('networkidle');
-await expect(page.getByText('Filtered results')).toBeVisible();
-
-// Right — wait for element count to stabilize (jQuery filter pattern)
-await expect(page.locator('.place-card')).not.toHaveCount(previousCount);
-
-// Right — simplest: just use a web-first assertion (auto-retries for 5s)
-await expect(page.getByText('No results')).toBeVisible();
-```
-
-For jQuery animations (fade, slide, toggle), wait for the animated element's
-final state rather than guessing the duration.
-
-Use web-first assertions: `expect(locator).toBeVisible()`,
-`expect(locator).toHaveText()`, `expect(page).toHaveURL()`. Playwright retries
-these automatically.
+`page.waitForTimeout()` is banned. Use web-first assertions instead:
+`expect(locator).toBeVisible()`, `expect(locator).toHaveText()`,
+`expect(page).toHaveURL()`. Playwright retries these automatically. For
+animations, wait for the animated element's final state. See
+[references/test-patterns.md](references/test-patterns.md) for concrete
+replacement patterns.
 
 ### No Hardcoded Selectors
 
-```typescript
-// Wrong
-await page.click('.btn-primary');
-await page.click('div:nth-child(3) > button');
-
-// Right
-await page.getByRole('button', { name: 'Save Changes' }).click();
-await page.getByLabel('Email address').fill('...');
-await page.getByTestId('submit-button').click();
-```
-
-If an element lacks an accessible label or test ID, add a `data-testid`
-attribute to the implementation before writing the test.
+Use `getByRole()`, `getByLabel()`, `getByTestId()` — never CSS class or
+structural selectors. If an element lacks an accessible label or test ID, add a
+`data-testid` attribute to the implementation before writing the test.
 
 ### Test Independence
 
@@ -490,34 +357,13 @@ Each test creates all required state itself and leaves no side effects. Use
 `beforeEach` with direct API calls for setup — never click through the UI to
 create prerequisite state.
 
-```typescript
-// Wrong: assumes previous test created a record
-test('user can delete a record', async ({ page }) => {
-  await page.goto('/records');
-  await page.getByRole('button', { name: 'Delete' }).first().click();
-});
-
-// Right: create via API in beforeEach
-test.beforeEach(async ({ request }) => {
-  await request.post('/api/records', {
-    data: { name: 'Meridian Analytics' },
-    headers: { Authorization: `Bearer ${process.env.TEST_TOKEN}` },
-  });
-});
-```
-
 ### Realistic Test Data
 
-```typescript
-// Wrong
-await loginPage.login('test@test.com', 'password');
+Use plausible names, emails, and values (`sarah.chen@example.com`, not
+`test@test.com`). Realistic data surfaces real rendering issues.
 
-// Right
-await loginPage.login('sarah.chen@example.com', 'Str0ng!Pass#99');
-```
-
-Use plausible names, emails, and values. Realistic data surfaces real rendering
-issues.
+For code examples of all four rules, see
+[references/test-patterns.md](references/test-patterns.md).
 
 ### Flaky Test Policy
 
