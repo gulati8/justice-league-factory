@@ -90,6 +90,7 @@ ALTER TABLE agent_runs ADD COLUMN phase TEXT;
 ALTER TABLE agent_runs ADD COLUMN gate_status TEXT;
 ALTER TABLE agent_runs ADD COLUMN artifacts_consumed TEXT;
 ALTER TABLE agent_runs ADD COLUMN cost_usd REAL DEFAULT 0.0;
+ALTER TABLE agent_runs ADD COLUMN skills_loaded TEXT;  -- JSON array of skill names active for this run
 ALTER TABLE factory_runs ADD COLUMN total_cost_usd REAL DEFAULT 0.0;
 ALTER TABLE factory_runs ADD COLUMN gate_config TEXT;
 

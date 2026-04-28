@@ -23,7 +23,7 @@
           "target_agent": { "type": "string" },
           "change_type": {
             "type": "string",
-            "enum": ["prompt", "tools", "contract", "new_agent"]
+            "enum": ["prompt", "tools", "contract", "new_agent", "skill"]
           },
           "current_value": { "type": "string" },
           "proposed_value": { "type": "string" },
@@ -37,6 +37,22 @@
             "type": "string",
             "enum": ["safe", "needs_review", "dangerous"]
           }
+        }
+      }
+    },
+    "skill_health": {
+      "type": "array",
+      "description": "Per-skill health snapshot from telemetry. Pointer to where to look — not itself a proposal. Sort by priority_score descending.",
+      "items": {
+        "type": "object",
+        "required": ["skill", "runs", "failure_rate", "last_reviewed", "staleness_days", "priority_score"],
+        "properties": {
+          "skill": { "type": "string", "description": "Skill name" },
+          "runs": { "type": "integer", "description": "Number of agent runs that loaded this skill" },
+          "failure_rate": { "type": "number", "minimum": 0, "maximum": 1, "description": "Fraction of those runs that produced a fail verdict" },
+          "last_reviewed": { "type": "string", "format": "date", "description": "From the skill's frontmatter" },
+          "staleness_days": { "type": "integer", "minimum": 0, "description": "Days between last_reviewed and analysis run" },
+          "priority_score": { "type": "number", "description": "staleness_days × failure_rate. Used to sort." }
         }
       }
     }
